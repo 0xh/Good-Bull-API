@@ -1,0 +1,1 @@
+from common_functions import get_depts
