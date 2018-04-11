@@ -4,7 +4,7 @@ from django.contrib.postgres.fields import ArrayField
 class Course(models.Model):
     _id = models.CharField(primary_key=True, max_length=16)
     short = models.CharField(max_length=12)
-    term_codes = ArrayField(models.CharField(max_length=6))
+    term_code = models.CharField(max_length=6)
     name = models.CharField(max_length=125)
     credits = models.IntegerField()
     description = models.TextField(max_length=300)
