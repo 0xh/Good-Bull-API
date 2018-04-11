@@ -16,7 +16,7 @@ We'd like to include more and more information of the Howdy portal. It's a damn 
 
 In the future, we'd like to include the following data in our API, and would __gladly__ welcome pull requests that contribute the following functionalities.
 - [ ] A programmatic relationship between courses (co-requisites, pre-requisites, etc.)
-
+- [ ] Tracking class capacity/occupancy
 ## Installing Dependencies
 To install all dependencies, first, it's highly recommended that you create a virtual environment using `virtualenv`.
 `cd /into/your/cloned/version/`
