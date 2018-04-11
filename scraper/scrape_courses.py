@@ -21,7 +21,6 @@ def collect(dept, term_code):
             'http://catalog.tamu.edu/graduate/course-descriptions/'
            ]
 
-    print(dept)
     for url in URLS:
         url = url + dept.lower()
         r = requests.get(url)
@@ -43,7 +42,8 @@ def collect(dept, term_code):
                 # Build the formal course name
                 name = ' '.join(split_title[2:]).strip()
                 name = re.sub(' +', ' ', name)
-
+                if len(name) > 100:
+                    print(name)
                 hours = course.find(class_='hours').text
                 credits = hours[0]
                 split_hours = hours.split('. ')
@@ -81,6 +81,7 @@ def collect(dept, term_code):
                                 term_code=term_code
                                )
                 course.save()
+    print(dept)
 
 term_codes = get_term_codes()
 for term_code in term_codes:
