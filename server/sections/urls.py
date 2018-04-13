@@ -7,5 +7,5 @@ router = DefaultRouter()
 router.register(r'', views.SectionViewSet)
 
 urlpatterns = [
-        url(r'^', include(router.urls))
+    url(r'^', include(router.urls))
 ]

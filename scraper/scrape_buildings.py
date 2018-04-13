@@ -4,7 +4,11 @@ import sys
 import csv
 import urllib.request
 import codecs
-sys.path.append(os.path.realpath(os.path.join(os.path.dirname(__file__), '../server/')))
+sys.path.append(
+    os.path.realpath(
+        os.path.join(
+            os.path.dirname(__file__),
+            '../server/')))
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'server.settings')
 django.setup()
 
@@ -16,6 +20,10 @@ ftpstream = urllib.request.urlopen(url)
 csvfile = csv.reader(codecs.iterdecode(ftpstream, 'utf-8'))
 
 for line in csvfile:
-    b = Building(abbr=line[0], name=line[1], address=line[2], city=line[3], zip_code=line[4])
+    b = Building(
+        abbr=line[0],
+        name=line[1],
+        address=line[2],
+        city=line[3],
+        zip_code=line[4])
     b.save()
-
