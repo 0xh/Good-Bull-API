@@ -5,7 +5,7 @@ class Meeting(models.Model):
     start_time = models.TimeField(null=True)
     end_time = models.TimeField(null=True)
     days = models.CharField(max_length=7, null=True)
-
+    # TODO: relate to buildings
     def __repr__(self):
         return str(
             (self.meeting_type,
@@ -33,7 +33,7 @@ class Section(models.Model):
     section_name = models.CharField(max_length=60)
     meetings = models.ManyToManyField(Meeting)
     credits = models.DecimalField(max_digits=4, decimal_places=2, null=True)
-    course = models.ForeignKey('courses.Course', on_delete=models.CASCADE)
+    course = models.ForeignKey('courses.Course', related_name='sections', on_delete=models.CASCADE)
     #instructor = models.ForeignKey('instructors.Instructor', on_delete=models.CASCADE)
 
     class Meta:

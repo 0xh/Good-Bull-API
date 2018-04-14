@@ -191,7 +191,8 @@ def collect(dept, term_code):
             'section_num': section_num,
             'honors': honors,
             'section_name': section_name,
-            'course': course
+            'course': course,
+            'credits': credits
         }
         (s, created) = Section.objects.update_or_create(term_code=term_code, crn=crn,
                                                         defaults=SECTION_DEFAULTS)
