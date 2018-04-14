@@ -1,6 +1,6 @@
 from rest_framework import serializers
-from courses.models import Course
-from sections.serializers import SectionSerializer
+from goodbullapi.models import Course
+from .sections import SectionSerializer
 
 
 class CourseSerializer(serializers.ModelSerializer):

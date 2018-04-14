@@ -1,13 +1,15 @@
-import requests
-import re
 import os
+import re
 import sys
-import django
 from datetime import datetime
 
-from common_functions import get_term_codes, get_depts
+import django
+import requests
 from bs4 import BeautifulSoup, NavigableString, Tag
 from django.db import transaction
+
+from common_functions import get_depts, get_term_codes
+
 
 sys.path.append(
     os.path.realpath(
@@ -17,8 +19,7 @@ sys.path.append(
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'server.settings')
 django.setup()
 
-from sections.models import Section, Meeting
-from courses.models import Course
+from goodbullapi.models import Course, Meeting, Section
 
 # Used to emulate an actual person
 HEADERS = {
@@ -92,7 +93,7 @@ def extract_credits(field_data):
 
 
 def extract_meetings(meeting_data):
-    if not meeting_data: 
+    if not meeting_data:
         return None
     trs = meeting_data.select('tr')
     meetings = []
@@ -180,7 +181,6 @@ def collect(dept, term_code):
             'prereqs': 'None listed. Check Howdy.'
         }
 
-        
         (course, created) = Course.objects.get_or_create(
             _id=course_id, defaults=COURSE_DEFAULTS)
 

@@ -1,7 +1,6 @@
 from django.db import models
-from django.contrib.postgres.fields import ArrayField
-# Create your models here.
 
+# Create your models here.
 class Course(models.Model):
     _id = models.CharField(primary_key=True, max_length=16)
     short = models.CharField(max_length=12)

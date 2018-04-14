@@ -1,9 +1,11 @@
-import django
+import codecs
+import csv
 import os
 import sys
-import csv
 import urllib.request
-import codecs
+
+import django
+
 sys.path.append(
     os.path.realpath(
         os.path.join(
@@ -12,7 +14,8 @@ sys.path.append(
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'server.settings')
 django.setup()
 
-from buildings.models import Building
+from goodbullapi.models import Building
+
 
 url = 'http://fcor.tamu.edu/webreporter/exportv6.asp?fm=2&t=[Current_Inv_Bldgs]&strSQL=Select%20[BldgAbbr],%20[BldgName],%20[Address],%20[City],%20[Zip]%20From%20[Current_Inv_Bldgs]%20Where%20BldgAbbr%20Like%20~^^~'
 

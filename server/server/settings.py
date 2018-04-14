@@ -38,9 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    'buildings.apps.BuildingsConfig',
-    'courses.apps.CoursesConfig',
-    'sections.apps.SectionsConfig'
+    'goodbullapi.apps.GoodbullapiConfig'
 ]
 
 MIDDLEWARE = [

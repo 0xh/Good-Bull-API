@@ -1,11 +1,13 @@
-import requests
-import re
 import os
+import re
 import sys
+
 import django
-from common_functions import get_term_codes, get_depts
+import requests
 from bs4 import BeautifulSoup
 from django.db import transaction
+
+from common_functions import get_depts, get_term_codes
 
 
 sys.path.append(
@@ -16,8 +18,7 @@ sys.path.append(
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'server.settings')
 django.setup()
 
-from courses.models import Course
-
+from goodbullapi.models import Course
 
 @transaction.atomic
 def collect(dept, term_code):

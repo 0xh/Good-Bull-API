@@ -6,20 +6,6 @@ class Meeting(models.Model):
     end_time = models.TimeField(null=True)
     days = models.CharField(max_length=7, null=True)
     # TODO: relate to buildings
-    def __repr__(self):
-        return str(
-            (self.meeting_type,
-             self.start_time,
-             self.end_time,
-             self.days))
-
-    def __str__(self):
-        return str(
-            (self.meeting_type,
-             self.start_time,
-             self.end_time,
-             self.days))
-
     class Meta:
         ordering = ('start_time',)
 
@@ -33,7 +19,7 @@ class Section(models.Model):
     section_name = models.CharField(max_length=60)
     meetings = models.ManyToManyField(Meeting)
     credits = models.DecimalField(max_digits=4, decimal_places=2, null=True)
-    course = models.ForeignKey('courses.Course', related_name='sections', on_delete=models.CASCADE)
+    course = models.ForeignKey('Course', related_name='sections', on_delete=models.CASCADE)
     #instructor = models.ForeignKey('instructors.Instructor', on_delete=models.CASCADE)
 
     class Meta:

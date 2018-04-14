@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from sections.models import Section, Meeting
+from goodbullapi.models import Section, Meeting
 
 
 class MeetingSerializer(serializers.ModelSerializer):

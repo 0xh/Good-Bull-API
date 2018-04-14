@@ -12,3 +12,4 @@ class Building(models.Model):
 
     class Meta:
         ordering = ('abbr',)
+    
