@@ -18,6 +18,7 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'server.settings')
 django.setup()
 
 from sections.models import Section, Meeting
+from courses.models import Course
 
 # Used to emulate an actual person
 HEADERS = {
@@ -77,7 +78,7 @@ def extract_credits(field_data):
         if 'Credits' in line:
             credits = line.split('Credits', -1)[0]
     if credits:
-        if 'TO' in credits:
+        if 'TO' in credits or 'OR' in credits:
             return None
         else:
             return float(credits)
@@ -91,6 +92,8 @@ def extract_credits(field_data):
 
 
 def extract_meetings(meeting_data):
+    if not meeting_data: 
+        return None
     trs = meeting_data.select('tr')
     meetings = []
     # The first row of every table is the header row, ignore it.
@@ -121,28 +124,34 @@ def extract_meetings(meeting_data):
 
 def extract_section_data(section):
     # Get section name, crn, course, and section number from title
-    [section_name, crn, short, section_num] = section.select_one(
-        'th.ddtitle').get_text().split(' - ')
+    split_title = section.select_one('th.ddtitle').get_text().split(' - ')
+    section_num = split_title[-1]
+    short = split_title[-2]
+    crn = split_title[-3]
+    section_name = ' '.join(split_title[0:-3])
     crn = int(crn)
     honors = False
     course_num = short.split(' ')[1]
     if '(Syllabus)' in section_num:
         section_num = section_num[0:4].strip()
-
     try:
         honors = int(section_num) >= 200 and int(section_num) < 300
     except Exception as e:
         print('Encountered section that isn\'t an integer:', section_num)
 
     # Get meeting information
-    meeting_data = section.select_one('table.datadisplaytable')
-    meetings = extract_meetings(meeting_data)
+    try:
+        meeting_data = section.select_one('table.datadisplaytable')
+        meetings = extract_meetings(meeting_data)
+    except Exception as e:
+        print(short)
+        raise e
 
     # Get instructor and credits
     field_data = section.select_one('td.dddefault').get_text().strip()
     instructor = extract_instructor(field_data)
     credits = extract_credits(field_data)
-    return crn, section_num, honors, section_name, meetings
+    return crn, section_num, honors, section_name, meetings, course_num, credits
 
 
 @transaction.atomic
@@ -155,12 +164,39 @@ def collect(dept, term_code):
     outer_datadisplaytable = soup.select_one('table.datadisplaytable')
     sections = merge_trs(outer_datadisplaytable)
     for section in sections:
-        crn, section_num, honors, section_name, meetings = extract_section_data(
+        crn, section_num, honors, section_name, meetings, course_num, credits = extract_section_data(
             section)
         _id = '%s_%s' % (crn, term_code)
-        (s, created) = Section.objects.get_or_create(_id=_id, crn=crn,
-                                                     section_num=section_num, honors=honors, section_name=section_name)
-        s.meetings.set(meetings, clear=True)
+        course_id = dept + '_' + str(course_num) + '_' + str(term_code)
+
+        COURSE_DEFAULTS = {
+            '_id': course_id,
+            'short': dept + '_' + course_num,
+            'term_code': term_code,
+            'name': section_name.title(),
+            'credits': credits,
+            'description': None,
+            'division_of_hours': None,
+            'prereqs': 'None listed. Check Howdy.'
+        }
+
+        
+        (course, created) = Course.objects.get_or_create(
+            _id=course_id, defaults=COURSE_DEFAULTS)
+
+        SECTION_DEFAULTS = {
+            '_id': _id,
+            'term_code': term_code,
+            'crn': crn,
+            'section_num': section_num,
+            'honors': honors,
+            'section_name': section_name,
+            'course': course
+        }
+        (s, created) = Section.objects.update_or_create(term_code=term_code, crn=crn,
+                                                        defaults=SECTION_DEFAULTS)
+        if meetings:
+            s.meetings.set(meetings, clear=True)
 
 
 term_codes = get_term_codes()

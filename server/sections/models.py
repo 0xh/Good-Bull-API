@@ -1,6 +1,5 @@
 from django.db import models
 
-
 class Meeting(models.Model):
     meeting_type = models.CharField(max_length=30)
     start_time = models.TimeField(null=True)
@@ -27,14 +26,15 @@ class Meeting(models.Model):
 
 class Section(models.Model):
     _id = models.CharField(primary_key=True, max_length=13)
+    term_code = models.IntegerField()
     crn = models.IntegerField()
     section_num = models.CharField(max_length=4)
     honors = models.BooleanField(default=False)
     section_name = models.CharField(max_length=60)
     meetings = models.ManyToManyField(Meeting)
     credits = models.DecimalField(max_digits=4, decimal_places=2, null=True)
-    # TODO: Figure out how to reference courses
-    # TODO: Figure out how to reference instructors
+    course = models.ForeignKey('courses.Course', on_delete=models.CASCADE)
+    #instructor = models.ForeignKey('instructors.Instructor', on_delete=models.CASCADE)
 
     class Meta:
         ordering = ('honors', 'section_num',)
