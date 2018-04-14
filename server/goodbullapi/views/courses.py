@@ -4,4 +4,7 @@ from rest_framework import viewsets
 
 class CourseViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = CourseSerializer
-    queryset = Course.objects.all()
+
+    def get_queryset(self):
+        term_code = self.kwargs['term_code']
+        return Course.objects.filter(term_code=term_code)

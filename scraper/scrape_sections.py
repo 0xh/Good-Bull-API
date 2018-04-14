@@ -168,11 +168,10 @@ def collect(dept, term_code):
         crn, section_num, honors, section_name, meetings, course_num, credits = extract_section_data(
             section)
         _id = '%s_%s' % (crn, term_code)
-        course_id = dept + '_' + str(course_num) + '_' + str(term_code)
+        course_id = dept + '-' + str(course_num)
 
         COURSE_DEFAULTS = {
             '_id': course_id,
-            'short': dept + '_' + course_num,
             'term_code': term_code,
             'name': section_name.title(),
             'credits': credits,
