@@ -168,20 +168,25 @@ def collect(dept, term_code):
         crn, section_num, honors, section_name, meetings, course_num, credits = extract_section_data(
             section)
         _id = '%s_%s' % (crn, term_code)
-        course_id = dept + '-' + str(course_num)
+        course_id = '%s_%s_%s' % (dept, course_num, term_code)
 
         COURSE_DEFAULTS = {
-            '_id': course_id,
             'term_code': term_code,
             'name': section_name.title(),
+            'dept': dept,
+            'course_num': course_num,
             'credits': credits,
             'description': None,
             'division_of_hours': None,
             'prereqs': 'None listed. Check Howdy.'
         }
-
-        (course, created) = Course.objects.get_or_create(
+        try:
+            (course, created) = Course.objects.get_or_create(
             _id=course_id, defaults=COURSE_DEFAULTS)
+        except Exception as e:
+            print(COURSE_DEFAULTS)
+            print(dept)
+            raise e
 
         SECTION_DEFAULTS = {
             '_id': _id,
@@ -203,5 +208,8 @@ term_codes = get_term_codes()
 for term_code in term_codes:
     depts = get_depts(term_code)
     for dept in depts:
-        collect(dept, int(term_code))
+        try:
+            collect(dept, int(term_code))
+        except requests.exceptions.ConnectionError as e:
+            collect(dept, int(term_code))
         print(term_code, '-', dept)

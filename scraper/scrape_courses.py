@@ -58,7 +58,7 @@ def collect(dept, term_code):
 
                 # Get the number of credit hours
                 if 'to' in hours or '-' in hours:
-                    credits = -1
+                    credits = None
                 else:
                     credits = int(
                         hours[hours.index(' '):hours.index('.')].strip())

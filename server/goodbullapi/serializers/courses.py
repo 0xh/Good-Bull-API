@@ -12,6 +12,7 @@ class CourseSerializer(serializers.ModelSerializer):
             'dept',
             'course_num',
             'term_code',
+            'credits',
             'name',
             'description',
             'division_of_hours',

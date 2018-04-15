@@ -1,2 +1,2 @@
-from .courses import CourseList
-__all__ = ['CourseList']
+from .courses import CourseList, CourseRetrieve
+__all__ = ['CourseList', 'CourseRetrieve']
