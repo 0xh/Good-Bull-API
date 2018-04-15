@@ -2,7 +2,6 @@ from django.db import models
 
 # Create your models here.
 
-
 class Building(models.Model):
     abbr = models.CharField(primary_key=True, max_length=10)
     name = models.CharField(max_length=50)
@@ -12,4 +11,3 @@ class Building(models.Model):
 
     class Meta:
         ordering = ('abbr',)
-    

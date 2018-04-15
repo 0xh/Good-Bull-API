@@ -27,14 +27,12 @@ HEADERS = {
 }
 
 
-"""
+def merge_trs(outer_datadisplaytable):
+    """
     Because of the terrible way that the Howdy portal is written,
     we have to merge the title of a section with its data
     (they're represented in separate rows of the table they're in).
-"""
-
-
-def merge_trs(outer_datadisplaytable):
+    """
     trs = outer_datadisplaytable.contents[1:]
     trs = [tr for tr in trs if not isinstance(tr, NavigableString)]
     merged = []
@@ -48,12 +46,10 @@ def merge_trs(outer_datadisplaytable):
     return merged
 
 
-"""
-    Extracts the instructor from Howdy data
-"""
-
-
 def extract_instructor(field_data):
+    """
+    Extracts the instructor from Howdy data
+    """
     if 'Instructor:' not in field_data and 'Instructors:' not in field_data:
         return None
     field_data = re.split('\n+', field_data)
@@ -66,13 +62,11 @@ def extract_instructor(field_data):
     return ' '.join(instructor.split())
 
 
-"""
+def extract_credits(field_data):
+    """
     Extracts the number of credits that this course is worth
     (useful for Special Topics courses)
-"""
-
-
-def extract_credits(field_data):
+    """
     field_data = re.split('\n+', field_data)
     credits = None
     for line in field_data:
@@ -86,13 +80,12 @@ def extract_credits(field_data):
     return credits
 
 
-"""
+def extract_meetings(meeting_data):
+    """
     Extracts the information regarding meetings, such as location,
     duration, day, and the type of each meeting.
-"""
+    """
 
-
-def extract_meetings(meeting_data):
     if not meeting_data:
         return None
     trs = meeting_data.select('tr')
@@ -118,12 +111,10 @@ def extract_meetings(meeting_data):
     return meetings
 
 
-"""
-    Extracts the important data from a section.
-"""
-
-
 def extract_section_data(section):
+    """
+    Extracts the important data from a section.
+    """
     # Get section name, crn, course, and section number from title
     split_title = section.select_one('th.ddtitle').get_text().split(' - ')
     section_num = split_title[-1]
@@ -157,59 +148,65 @@ def extract_section_data(section):
 
 @transaction.atomic
 def collect(dept, term_code):
-    URL = 'https://compass-ssb.tamu.edu/pls/PROD/bwckschd.p_get_crse_unsec?term_in={}&sel_subj=dummy&sel_day=dummy&sel_schd=dummy&sel_insm=dummy&sel_camp=dummy&sel_levl=dummy&sel_sess=dummy&sel_instr=dummy&sel_ptrm=dummy&sel_attr=dummy&sel_subj={}&sel_crse=&sel_title=&sel_schd=%25&sel_insm=%25&sel_from_cred=&sel_to_cred=&sel_camp=%25&sel_levl=%25&sel_ptrm=%25&sel_instr=%25&sel_attr=%25&begin_hh=0&begin_mi=0&begin_ap=a&end_hh=0&end_mi=0&end_ap=a'.format(
-        term_code,
-        dept)
-    r = requests.get(URL, headers=HEADERS)
-    soup = BeautifulSoup(r.text, 'lxml')
-    outer_datadisplaytable = soup.select_one('table.datadisplaytable')
-    sections = merge_trs(outer_datadisplaytable)
-    for section in sections:
-        crn, section_num, honors, section_name, meetings, course_num, credits = extract_section_data(
-            section)
-        _id = '%s_%s' % (crn, term_code)
-        course_id = '%s_%s_%s' % (dept, course_num, term_code)
+    try:
+        URL = 'https://compass-ssb.tamu.edu/pls/PROD/bwckschd.p_get_crse_unsec?term_in={}&sel_subj=dummy&sel_day=dummy&sel_schd=dummy&sel_insm=dummy&sel_camp=dummy&sel_levl=dummy&sel_sess=dummy&sel_instr=dummy&sel_ptrm=dummy&sel_attr=dummy&sel_subj={}&sel_crse=&sel_title=&sel_schd=%25&sel_insm=%25&sel_from_cred=&sel_to_cred=&sel_camp=%25&sel_levl=%25&sel_ptrm=%25&sel_instr=%25&sel_attr=%25&begin_hh=0&begin_mi=0&begin_ap=a&end_hh=0&end_mi=0&end_ap=a'.format(
+            term_code,
+            dept)
+        r = requests.get(URL, headers=HEADERS)
+        soup = BeautifulSoup(r.text, 'lxml')
+        outer_datadisplaytable = soup.select_one('table.datadisplaytable')
+        sections = merge_trs(outer_datadisplaytable)
+        for section in sections:
+            crn, section_num, honors, section_name, meetings, course_num, credits = extract_section_data(
+                section)
+            _id = '%s_%s' % (crn, term_code)
+            course_id = '%s_%s_%s' % (dept, course_num, term_code)
 
-        COURSE_DEFAULTS = {
-            'term_code': term_code,
-            'name': section_name.title(),
-            'dept': dept,
-            'course_num': course_num,
-            'credits': credits,
-            'description': None,
-            'division_of_hours': None,
-            'prereqs': 'None listed. Check Howdy.'
-        }
-        try:
-            (course, created) = Course.objects.get_or_create(
-            _id=course_id, defaults=COURSE_DEFAULTS)
-        except Exception as e:
-            print(COURSE_DEFAULTS)
-            print(dept)
-            raise e
+            COURSE_DEFAULTS = {
+                'term_code': term_code,
+                'name': section_name.title(),
+                'dept': dept,
+                'course_num': course_num,
+                'credits': credits,
+                'description': None,
+                'division_of_hours': None,
+                'prereqs': 'None listed. Check Howdy.'
+            }
+            try:
+                (course, created) = Course.objects.get_or_create(
+                    _id=course_id, defaults=COURSE_DEFAULTS)
+            except Exception as e:
+                print(COURSE_DEFAULTS)
+                print(dept)
+                raise e
 
-        SECTION_DEFAULTS = {
-            '_id': _id,
-            'term_code': term_code,
-            'crn': crn,
-            'section_num': section_num,
-            'honors': honors,
-            'section_name': section_name,
-            'course': course,
-            'credits': credits
-        }
-        (s, created) = Section.objects.update_or_create(term_code=term_code, crn=crn,
-                                                        defaults=SECTION_DEFAULTS)
-        if meetings:
-            s.meetings.set(meetings, clear=True)
+            SECTION_DEFAULTS = {
+                '_id': _id,
+                'term_code': term_code,
+                'dept': dept,
+                'course_num': course_num,
+                'crn': crn,
+                'section_num': section_num,
+                'honors': honors,
+                'section_name': section_name,
+                'course': course,
+                'credits': credits
+            }
+            (s, created) = Section.objects.update_or_create(term_code=term_code, crn=crn,
+                                                            defaults=SECTION_DEFAULTS)
+            if meetings:
+                s.meetings.set(meetings, clear=True)
+    except requests.exceptions.ConnectionError as e:
+        # Currently, this seems to be the only way
+        # to get around TAMU's ECONNRESETs. A better
+        # way would make a great PR.
+        print('ECONNRESET in %s' % dept)
+        collect(dept, int(term_code))
 
 
 term_codes = get_term_codes()
 for term_code in term_codes:
     depts = get_depts(term_code)
     for dept in depts:
-        try:
-            collect(dept, int(term_code))
-        except requests.exceptions.ConnectionError as e:
-            collect(dept, int(term_code))
+        collect(dept, int(term_code))
         print(term_code, '-', dept)
