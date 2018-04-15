@@ -3,10 +3,6 @@ from rest_framework.routers import DefaultRouter
 
 import goodbullapi.views
 
-router = DefaultRouter()
-router.register(r'courses/(?P<term_code>.+)', goodbullapi.views.CourseViewSet, base_name='Course')
-router.register(r'buildings', goodbullapi.views.BuildingViewSet)
-router.register(r'sections', goodbullapi.views.SectionViewSet)
 urlpatterns = [
-    url('^', include(router.urls))
+    url(r'courses/(?P<term_code>.+)/(?P<dept>.+)', goodbullapi.views.CourseList.as_view())
 ]

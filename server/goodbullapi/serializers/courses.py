@@ -9,8 +9,8 @@ class CourseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Course
         fields = (
-            '_id',
-            'short',
+            'dept',
+            'course_num',
             'term_code',
             'name',
             'description',
@@ -18,3 +18,8 @@ class CourseSerializer(serializers.ModelSerializer):
             'prereqs',
             'sections'
         )
+    
+    @staticmethod
+    def setup_eager_loading(queryset):
+        queryset = queryset.prefetch_related('sections')
+        return queryset
