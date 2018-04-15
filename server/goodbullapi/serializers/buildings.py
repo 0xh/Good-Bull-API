@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from buildings.models import Building
+from goodbullapi.models import Building
 
 class BuildingSerializer(serializers.ModelSerializer):
     class Meta:
