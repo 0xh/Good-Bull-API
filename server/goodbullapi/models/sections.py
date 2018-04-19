@@ -14,6 +14,8 @@ class Section(models.Model):
     _id = models.CharField(primary_key=True, max_length=13)
     term_code = models.IntegerField()
     crn = models.IntegerField()
+    dept = models.CharField(max_length=5)
+    course_num = models.CharField(max_length=5)
     section_num = models.CharField(max_length=4)
     honors = models.BooleanField(default=False)
     section_name = models.CharField(max_length=60)

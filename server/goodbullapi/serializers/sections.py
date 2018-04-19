@@ -14,8 +14,10 @@ class SectionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Section
         fields = (
-            'term_code',
             'crn',
+            'term_code',
+            'dept',
+            'course_num',
             'section_num',
             'honors',
             'section_name',

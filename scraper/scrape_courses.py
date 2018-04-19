@@ -58,7 +58,7 @@ def collect(dept, term_code):
 
                 # Get the number of credit hours
                 if 'to' in hours or '-' in hours:
-                    credits = -1
+                    credits = None
                 else:
                     credits = int(
                         hours[hours.index(' '):hours.index('.')].strip())
@@ -81,10 +81,10 @@ def collect(dept, term_code):
                 if prereqs:
                     description = description[0:description.index(prereqs)]
                 _id = '{}_{}_{}'.format(dept, course_num, term_code)
-                short = '{}-{}'.format(dept, course_num)
                 course = Course(
                     _id=_id,
-                    short=short,
+                    dept=dept,
+                    course_num=course_num,
                     credits=credits,
                     name=name,
                     description=description,
