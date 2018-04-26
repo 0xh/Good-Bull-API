@@ -6,9 +6,9 @@ Everybody who wants to work with Howdy data has to do the same thing: scrape the
 
 ## Objectives
 Design a consistent and robust API that allows students to individually query for the following:
-- [ ] Buildings, which includes addresses, zip codes, cities, names, and abbreviations.
-- [ ] Courses, which includes course descriptions, semesters in which it was tradtionally offered, as well as credit hours and number of hours spent in lecture, laboratory, and recitation.
-- [ ] Sections, which includes meeting times, instructors, and locations.
+- [X] Buildings, which includes addresses, zip codes, cities, names, and abbreviations.
+- [X] Courses, which includes course descriptions, semesters in which it was tradtionally offered, as well as credit hours and number of hours spent in lecture, laboratory, and recitation.
+- [X] Sections, which includes meeting times, instructors, and locations.
 - [ ] Instructors, which includes their historical grade distributions, their historical GPA, as well as their cumulative grade distribution and cumulative GPA.
 
 ## Moving Forward
