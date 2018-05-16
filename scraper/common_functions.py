@@ -11,7 +11,7 @@ def get_term_codes():
     r = requests.get(URL, headers=HEADERS)
     soup = BeautifulSoup(r.text, 'html.parser')
     options = soup.find_all('option', {'value': True})
-    options = options[1:6]
+    options = options[1:]
     return [option['value'] for option in options]
 
 
