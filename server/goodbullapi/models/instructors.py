@@ -14,8 +14,10 @@ class GPADistribution(models.Model):
     def __repr__(self):
         return str(self.ABCDFQ) + " " + str(self.section) + " " + str(self.instructor)
 
+    ordering = ('section')
 
 class Instructor(models.Model):
+    _id = models.CharField(primary_key=True, max_length=70)
     name = models.CharField(max_length=70)
     
     def __repr__(self):

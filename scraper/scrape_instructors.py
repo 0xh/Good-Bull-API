@@ -1,13 +1,14 @@
 
 from datetime import datetime
 from pprint import pprint
+import re
 
 import PyPDF2
 import requests
 from bs4 import BeautifulSoup
 
 import sync_with_django_orm
-from goodbullapi.models import GPADistribution, Section
+from goodbullapi.models import GPADistribution, Instructor, Section
 
 LEN_HEADER_ROW = 38
 
@@ -189,7 +190,7 @@ if __name__ == '__main__':
             pdf_reader = open_pdf(download_path)
             if pdf_reader:
                 for section_gpa_data in extract_pdf_data(pdf_reader):
-                    (dept, course_num, section_num), instructor, ABCDFQ = section_gpa_data
+                    (dept, course_num, section_num), instructor_name, ABCDFQ = section_gpa_data
 
                     COLLEGE_STATION = '1'
                     GALVESTON = '2'
@@ -206,5 +207,13 @@ if __name__ == '__main__':
                     except Section.DoesNotExist:
                         print('Section not found for ' + str(section_gpa_data))
                     if section:
-                        (g, created) = GPADistribution.objects.update_or_create(
-                            section=section, ABCDFQ=ABCDFQ, gpa=calculate_gpa(ABCDFQ))
+                        instructor = None
+                        instructor_id = re.sub(' ', '_', instructor_name)
+                        try:
+                            instructor = Instructor.objects.get(name=instructor_name, _id=instructor_id)
+                        except Instructor.DoesNotExist:
+                            print('Instructor not found.')
+                            instructor = Instructor.objects.create(name=instructor_name, _id=instructor_id)
+                        if section:
+                            (g, created) = GPADistribution.objects.update_or_create(
+                                section=section, ABCDFQ=ABCDFQ, gpa=calculate_gpa(ABCDFQ), instructor=instructor)

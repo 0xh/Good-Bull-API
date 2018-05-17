@@ -25,3 +25,8 @@ class SectionSerializer(serializers.ModelSerializer):
             'least_credits',
             'most_credits',
             'gpa_distribution')
+    
+    @staticmethod
+    def setup_eager_loading(queryset):
+        queryset = queryset.select_related('gpa_distribution')
+        return queryset
