@@ -1,24 +1,14 @@
-import os
 import re
-import sys
 
-import django
 import requests
 from bs4 import BeautifulSoup
 from django.db import transaction
 
-from common_functions import get_depts, get_term_codes
 
-
-sys.path.append(
-    os.path.realpath(
-        os.path.join(
-            os.path.dirname(__file__),
-            '../server/')))
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'server.settings')
-django.setup()
-
+import sync_with_django_orm
+from common_functions import request_depts, request_term_codes
 from goodbullapi.models import Course
+
 
 @transaction.atomic
 def collect(dept, term_code):
@@ -85,7 +75,8 @@ def collect(dept, term_code):
                     _id=_id,
                     dept=dept,
                     course_num=course_num,
-                    credits=credits,
+                    least_credits=credits,
+                    most_credits=credits,
                     name=name,
                     description=description,
                     division_of_hours=dist_hours,
@@ -96,8 +87,6 @@ def collect(dept, term_code):
     print(dept)
 
 
-term_codes = get_term_codes()
-for term_code in term_codes:
-    depts = get_depts(term_code)
-    for dept in depts:
+for term_code in request_term_codes():
+    for dept in request_depts(term_code):
         collect(dept, term_code)

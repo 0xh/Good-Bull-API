@@ -1,18 +1,8 @@
 import codecs
 import csv
-import os
-import sys
 import urllib.request
 
-import django
-
-sys.path.append(
-    os.path.realpath(
-        os.path.join(
-            os.path.dirname(__file__),
-            '../server/')))
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'server.settings')
-django.setup()
+import sync_with_django_orm
 
 from goodbullapi.models import Building
 
@@ -23,10 +13,11 @@ ftpstream = urllib.request.urlopen(url)
 csvfile = csv.reader(codecs.iterdecode(ftpstream, 'utf-8'))
 
 for line in csvfile:
+    abbreviation, name, address, city, zip_code = line[:5]
     b = Building(
-        abbr=line[0],
-        name=line[1],
-        address=line[2],
-        city=line[3],
-        zip_code=line[4])
+        abbr=abbreviation,
+        name=name,
+        address=address,
+        city=city,
+        zip_code=zip_code)
     b.save()

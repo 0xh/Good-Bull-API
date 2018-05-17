@@ -1,29 +1,18 @@
-import os
-import sys
+
 from datetime import datetime
 from pprint import pprint
 
-import django
 import PyPDF2
 import requests
 from bs4 import BeautifulSoup
 
-sys.path.append(
-    os.path.realpath(
-        os.path.join(
-            os.path.dirname(__file__),
-            '../server/')))
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'server.settings')
-django.setup()
-
-from goodbullapi.models import Section, GPADistribution
+import sync_with_django_orm
+from goodbullapi.models import GPADistribution, Section
 
 LEN_HEADER_ROW = 38
 
 LEN_SECTION_ROW = 20
-LEN_COURSE_TOTAL_ROW = 19
-LEN_COLLEGE_TOTAL_ROW = 19
-LEN_DEPT_TOTAL_ROW = 19
+LEN_COURSE_TOTAL_ROW = LEN_COLLEGE_TOTAL_ROW = LEN_DEPT_TOTAL_ROW = 19
 
 PDF_DOWNLOAD_DIR = 'pdfs/'
 
@@ -36,27 +25,54 @@ def download_pdf(url):
         with open(download_path, 'wb+') as f:
             f.write(r.content)
         return download_path
-    except requests.exceptions.HTTPError as e:
+    except requests.exceptions.HTTPError:
         print('404 on ' + url)
 
 
 def is_header_row(text):
+    """
+    Given a \"row\" in a grade distribution PDF, determines if the row is one that
+    contains header information (such as what each column is, various formatting
+    dashes, etc.)
+    Used to skip rows.
+    """
     return text == 'SECTION'
 
 
 def is_course_total_row(text):
+    """
+    Given a \"row\" in a grade distribution PDF, determines if the row is one that 
+    displays the number of letter grades distributed across an entire course.
+    Used to skip rows.
+    """
     return text == 'COURSE TOTAL:'
 
 
 def is_college_total_row(text):
+    """
+    Given a \"row\" in a grade distribution PDF, determines if the row is one that 
+    displays the number of letter grades distributed across the entire college.
+    Used to skip rows.
+    """
     return text == 'COLLEGE TOTAL:'
 
 
 def is_dept_total_row(text):
+    """
+    Given a \"row\" in a grade distribution PDF, determines if the row is one that
+    displays the number of letter grades distributed across an entire department.
+    Used to skip rows.
+    """
     return text == 'DEPARTMENT TOTAL:'
 
 
 def open_pdf(path):
+    """
+    Creates a PyPDF2.PdfFileReader instance around the path provided. This
+    function can throw an error, which is because the path provided doesn't lead to
+    a valid PDF. This is expected behavior, TAMU is very inconsistent in their error
+    handling methods.
+    """
     try:
         return PyPDF2.PdfFileReader(open(path, 'rb'))
     except PyPDF2.utils.PdfReadError:
@@ -64,6 +80,10 @@ def open_pdf(path):
 
 
 def extract_page_data(page_text):
+    """
+    Retrieves the letter grade distributions (number of As, Bs, Cs, etc.) for all of the
+    sections on this page.
+    """
     # Split the contents of the page on newlines, and strip whitespace from entries
     page_text = page_text.split('\n')
     page_text = [elem.strip() for elem in page_text]
@@ -97,6 +117,9 @@ def extract_page_data(page_text):
 
 
 def extract_pdf_data(pdf_reader):
+    """
+    A generator function that yields the section data in a grade distribution PDF.
+    """
     for i in range(pdf_reader.getNumPages()):
         current_page = pdf_reader.getPage(i)
         current_page_text = current_page.extractText()
@@ -105,7 +128,7 @@ def extract_pdf_data(pdf_reader):
             yield section
 
 
-def abbreviations():
+def request_college_abbreviations():
     ROOT_URL = 'http://web-as.tamu.edu/gradereport/'
     r = requests.get(ROOT_URL)
     soup = BeautifulSoup(r.text, 'lxml')
@@ -117,27 +140,47 @@ def abbreviations():
     return abbreviations[:-1]
 
 
-def terms():
+def generate_terms():
     SPRING = '1'
     SUMMER = '2'
     FALL = '3'
     SEMESTERS = [SPRING, SUMMER, FALL]
-    YEARS = map(str, range(2017, datetime.now().year))
+    YEARS = map(str, range(datetime.now().year, 2013, -1))
     for year in YEARS:
         for semester in SEMESTERS:
             yield year + semester
 
 
-def urls():
+def generate_urls():
+    """
+    Generates URLs to retrieve every grade distribution
+    for every college for every term.
+    """
     TEMPLATE_URL = 'http://web-as.tamu.edu/gradereport/PDFReports/%s/grd%s%s.pdf'
-    for term in terms():
-        for abbr in abbreviations():
+    for term in generate_terms():
+        for abbr in request_college_abbreviations():
             yield TEMPLATE_URL % (term, term, abbr)
 
 
+def calculate_gpa(ABCDFQ):
+    A = 4.0
+    B = 3.0
+    C = 2.0
+    D = 1.0
+    F = 0.0
+    WEIGHTS = [A, B, C, D, F]
+    # Ignore students with extenuating circumstances
+    # (I, W, F*, etc.)
+    NUM_STUDENTS = sum(ABCDFQ)
+    total_credits = 0
+    for (students_with_this_grade, weight) in zip(ABCDFQ, WEIGHTS):
+        total_credits += students_with_this_grade * weight
+    return total_credits / NUM_STUDENTS
+
+
 if __name__ == '__main__':
-    SPECIAL_CASES = {'GV': '2', 'QT': '3'}
-    for url in urls():
+
+    for url in generate_urls():
         pprint(url)
         download_path = download_pdf(url)
         term = url[-11:-6]
@@ -147,15 +190,21 @@ if __name__ == '__main__':
             if pdf_reader:
                 for section_gpa_data in extract_pdf_data(pdf_reader):
                     (dept, course_num, section_num), instructor, ABCDFQ = section_gpa_data
-                    pprint(section_gpa_data)
-                    #'1' = College Station, '2' = Galveston, '3' = Qatar
-                    campus = '1' if abbr not in SPECIAL_CASES else SPECIAL_CASES[abbr]
+
+                    COLLEGE_STATION = '1'
+                    GALVESTON = '2'
+                    QATAR = '3'
+                    SPECIAL_CASES = {'GV': GALVESTON, 'QT': QATAR}
+                    campus = COLLEGE_STATION
+                    if abbr in SPECIAL_CASES:
+                        campus = SPECIAL_CASES[abbr]
                     term_code = int(term + campus)
                     section = None
                     try:
                         section = Section.objects.get(
-                        term_code=term_code, dept=dept, course_num=course_num, section_num=section_num)
+                            term_code=term_code, dept=dept, course_num=course_num, section_num=section_num)
                     except Section.DoesNotExist:
                         print('Section not found for ' + str(section_gpa_data))
                     if section:
-                        (g, created) = GPADistribution.objects.update_or_create(section=section, ABCDFQ=ABCDFQ)
+                        (g, created) = GPADistribution.objects.update_or_create(
+                            section=section, ABCDFQ=ABCDFQ, gpa=calculate_gpa(ABCDFQ))

@@ -1,11 +1,13 @@
 from django.db import models
 
+
 class Meeting(models.Model):
     meeting_type = models.CharField(max_length=30)
     start_time = models.TimeField(null=True)
     end_time = models.TimeField(null=True)
     days = models.CharField(max_length=7, null=True)
     # TODO: relate to buildings
+
     class Meta:
         ordering = ('start_time',)
 
@@ -20,9 +22,10 @@ class Section(models.Model):
     honors = models.BooleanField(default=False)
     section_name = models.CharField(max_length=60)
     meetings = models.ManyToManyField(Meeting)
-    credits = models.DecimalField(max_digits=4, decimal_places=2, null=True)
-    course = models.ForeignKey('Course', related_name='sections', on_delete=models.CASCADE)
-    #instructor = models.ForeignKey('instructors.Instructor', on_delete=models.CASCADE)
+    least_credits = models.FloatField(null=True)
+    most_credits = models.FloatField(null=True)
+    course = models.ForeignKey(
+        'Course', related_name='sections', on_delete=models.CASCADE)
 
     class Meta:
         ordering = ('honors', 'section_num',)

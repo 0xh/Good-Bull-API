@@ -1,30 +1,33 @@
-import os
+
 import re
-import sys
 from datetime import datetime
 
-import django
 import requests
 from bs4 import BeautifulSoup, NavigableString, Tag
 from django.db import transaction
 
-from common_functions import get_depts, get_term_codes
-
-
-sys.path.append(
-    os.path.realpath(
-        os.path.join(
-            os.path.dirname(__file__),
-            '../server/')))
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'server.settings')
-django.setup()
-
+import helpful_regex
+import sync_with_django_orm
+from common_functions import request_depts, request_term_codes
 from goodbullapi.models import Course, Meeting, Section
 
 # Used to emulate an actual person
 HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/59.0.3071.115 Safari/537.36'
 }
+
+
+def is_primary_instructor(instructor):
+    """
+    If the string "(P)" is present in the string
+    provided, this is a primary instructor. The
+    (P) tag should be removed.
+    """
+    return '(P)' in instructor
+
+
+def instructors_are_listed(text):
+    return 'Instructor:' in text or 'Instructors:' in text
 
 
 def merge_trs(outer_datadisplaytable):
@@ -40,44 +43,44 @@ def merge_trs(outer_datadisplaytable):
         if tr.select_one('th.ddtitle'):
             merged.append(tr)
         elif tr.select_one('td.dddefault'):
-            merged[len(
-                merged) - 1] = BeautifulSoup(str(merged[len(merged) - 1]) + str(tr), 'lxml')
-
+            merged[-1] = BeautifulSoup(str(merged[-1]) + str(tr), 'lxml')
     return merged
 
 
 def extract_instructor(field_data):
-    """
-    Extracts the instructor from Howdy data
-    """
-    if 'Instructor:' not in field_data and 'Instructors:' not in field_data:
+    if not instructors_are_listed(field_data):
         return None
     field_data = re.split('\n+', field_data)
     slice_index = 0
-    while 'Instructor:' not in field_data[slice_index] and 'Instructors:' not in field_data[slice_index]:
+    while not instructors_are_listed(field_data[slice_index]):
         slice_index += 1
-    instructor = field_data[slice_index + 1]
-    if '(P)' in instructor:
+    instructor = field_data[slice_index + 1].split(', ')[0].upper()
+    if is_primary_instructor(instructor):
         instructor = instructor[:-3].strip()
-    return ' '.join(instructor.split())
+    instructor = re.split(' +', instructor)
+    instructor = instructor[-1] + " " + instructor[0][0]
+    return instructor
 
 
 def extract_credits(field_data):
     """
-    Extracts the number of credits that this course is worth
+    Extracts the number of credits that this section is worth
     (useful for Special Topics courses)
     """
     field_data = re.split('\n+', field_data)
-    credits = None
+    least_credits = most_credits = None
     for line in field_data:
         if 'Credits' in line:
-            credits = line.split('Credits', -1)[0]
-    if credits:
-        if 'TO' in credits or 'OR' in credits:
-            return None
-        else:
-            return float(credits)
-    return credits
+            results = re.findall(helpful_regex.VARYING_CREDITS_PATTERN, line)
+            if not results:
+                exact_credits = re.findall(
+                    helpful_regex.REGULAR_CREDITS_PATTERN, line)[0]
+                results = (exact_credits, exact_credits)
+            else:
+                results = results[0]
+            break
+    least_credits, most_credits = results
+    return float(least_credits), float(most_credits)
 
 
 def extract_meetings(meeting_data):
@@ -92,8 +95,8 @@ def extract_meetings(meeting_data):
     meetings = []
     # The first row of every table is the header row, ignore it.
     for tr in trs[1:]:
-        meeting_type, duration, days, location, * \
-            rest = [td.get_text() for td in tr.select('td')]
+        meeting_type, duration, days, location = [
+            td.get_text() for td in tr.select('td')][:4]
         if days == 'TBA':
             days = None
         start_time = end_time = None
@@ -111,39 +114,39 @@ def extract_meetings(meeting_data):
     return meetings
 
 
+def is_honors(section_num):
+    """
+    An honors section is denoted by a number ranging between 200 and 299 (inclusive). This function will
+    throw an error if given a non-integer value (sometimes section numbers have letters in them, for some
+    unfathomable reason)
+    """
+    return int(section_num) >= 200 and int(section_num) < 300
+
+
 def extract_section_data(section):
     """
-    Extracts the important data from a section.
+    Extracts the Course Registration Number (CRN), section number, section name, meetings, course number,
+    credits, and whether this specific section is an honors section or not, from a merged `tr`.
     """
     # Get section name, crn, course, and section number from title
-    split_title = section.select_one('th.ddtitle').get_text().split(' - ')
-    section_num = split_title[-1]
-    short = split_title[-2]
-    crn = split_title[-3]
-    section_name = ' '.join(split_title[0:-3])
-    crn = int(crn)
+    title_text = section.select_one('th.ddtitle').get_text()
+    section_name, crn, dept, course_num, section_num = re.findall(
+        helpful_regex.TITLE_PATTERN, title_text)[0]
     honors = False
-    course_num = short.split(' ')[1]
-    if '(Syllabus)' in section_num:
-        section_num = section_num[0:4].strip()
     try:
-        honors = int(section_num) >= 200 and int(section_num) < 300
-    except Exception as e:
-        print('Encountered section that isn\'t an integer:', section_num)
+        honors = is_honors(section_num)
+    except Exception:
+        print('Encountered section that isn\'t an integer. This is expected. Section number in question is:', section_num)
 
     # Get meeting information
-    try:
-        meeting_data = section.select_one('table.datadisplaytable')
-        meetings = extract_meetings(meeting_data)
-    except Exception as e:
-        print(short)
-        raise e
+    meeting_data = section.select_one('table.datadisplaytable')
+    meetings = extract_meetings(meeting_data)
 
     # Get instructor and credits
     field_data = section.select_one('td.dddefault').get_text().strip()
-    instructor = extract_instructor(field_data)
-    credits = extract_credits(field_data)
-    return crn, section_num, honors, section_name, meetings, course_num, credits
+    least_credits, most_credits = extract_credits(field_data)
+    # instructor = extract_instructor(field_data)
+    return crn, section_num, honors, section_name, meetings, course_num, least_credits, most_credits
 
 
 @transaction.atomic
@@ -157,7 +160,7 @@ def collect(dept, term_code):
         outer_datadisplaytable = soup.select_one('table.datadisplaytable')
         sections = merge_trs(outer_datadisplaytable)
         for section in sections:
-            crn, section_num, honors, section_name, meetings, course_num, credits = extract_section_data(
+            crn, section_num, honors, section_name, meetings, course_num, least_credits, most_credits = extract_section_data(
                 section)
             _id = '%s_%s' % (crn, term_code)
             course_id = '%s_%s_%s' % (dept, course_num, term_code)
@@ -167,7 +170,8 @@ def collect(dept, term_code):
                 'name': section_name.title(),
                 'dept': dept,
                 'course_num': course_num,
-                'credits': credits,
+                'least_credits': least_credits,
+                'most_credits': most_credits,
                 'description': None,
                 'division_of_hours': None,
                 'prereqs': 'None listed. Check Howdy.'
@@ -190,7 +194,8 @@ def collect(dept, term_code):
                 'honors': honors,
                 'section_name': section_name,
                 'course': course,
-                'credits': credits
+                'least_credits': least_credits,
+                'most_credits': most_credits
             }
             (s, created) = Section.objects.update_or_create(term_code=term_code, crn=crn,
                                                             defaults=SECTION_DEFAULTS)
@@ -204,9 +209,7 @@ def collect(dept, term_code):
         collect(dept, int(term_code))
 
 
-term_codes = get_term_codes()
-for term_code in term_codes:
-    depts = get_depts(term_code)
-    for dept in depts:
+for term_code in request_term_codes():
+    for dept in request_depts(term_code):
         collect(dept, int(term_code))
         print(term_code, '-', dept)
