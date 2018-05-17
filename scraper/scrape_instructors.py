@@ -138,6 +138,7 @@ def urls():
 if __name__ == '__main__':
     SPECIAL_CASES = {'GV': '2', 'QT': '3'}
     for url in urls():
+        pprint(url)
         download_path = download_pdf(url)
         term = url[-11:-6]
         abbr = url[-6:-4]
@@ -146,12 +147,15 @@ if __name__ == '__main__':
             if pdf_reader:
                 for section_gpa_data in extract_pdf_data(pdf_reader):
                     (dept, course_num, section_num), instructor, ABCDFQ = section_gpa_data
+                    pprint(section_gpa_data)
                     #'1' = College Station, '2' = Galveston, '3' = Qatar
                     campus = '1' if abbr not in SPECIAL_CASES else SPECIAL_CASES[abbr]
                     term_code = int(term + campus)
+                    section = None
                     try:
                         section = Section.objects.get(
                         term_code=term_code, dept=dept, course_num=course_num, section_num=section_num)
+                    except Section.DoesNotExist:
+                        print('Section not found for ' + str(section_gpa_data))
+                    if section:
                         (g, created) = GPADistribution.objects.update_or_create(section=section, ABCDFQ=ABCDFQ)
-                    except Exception as e:
-                        raise e
