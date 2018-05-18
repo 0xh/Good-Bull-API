@@ -4,6 +4,11 @@ from rest_framework import generics
 from django.shortcuts import get_object_or_404
 
 class CourseListByDepartment(generics.ListAPIView):
+    """
+    Lists all courses offered by a department during a term, to allow for larger searches 
+    while not slowing down retrieval (this search is still slow for larger departments).
+    """
+
     serializer_class = CourseSerializer
 
     def get_queryset(self):
@@ -14,6 +19,10 @@ class CourseListByDepartment(generics.ListAPIView):
         return queryset
 
 class CourseRetrieve(generics.RetrieveAPIView):
+    """
+    Retrieves a specific course offered during a term.
+    """
+    
     serializer_class = CourseSerializer
     queryset = Course.objects.all()
 

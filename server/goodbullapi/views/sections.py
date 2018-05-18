@@ -3,7 +3,12 @@ from goodbullapi.serializers import SectionSerializer
 from rest_framework import generics
 from django.shortcuts import get_object_or_404
 
+
 class SectionRetrieve(generics.RetrieveAPIView):
+    """
+    Given a term code and CRN, retrieves a specific section, its GPA distribution (if applicable), and 
+    detailed information about the building it's in.
+    """
     serializer_class = SectionSerializer
     queryset = Section.objects.all()
 

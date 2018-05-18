@@ -5,11 +5,20 @@ from django.shortcuts import get_object_or_404
 
 
 class InstructorRetrieve(generics.RetrieveAPIView):
+    """
+    Retrieves an instructor (and their associated sections) based on their ID.
+    IDs are simply LASTNAME_FIRSTINITIAL.
+    """
     serializer_class = InstructorSerializer
     queryset = Instructor.objects.all()
 
 
 class InstructorListByCourse(generics.ListAPIView):
+    """
+    Given a department and course number, retrieves all of the instructors who have
+    ever taught that course. Useful for comparing instructors to one another in terms
+    of how they grade a course.
+    """
     serializer_class = InstructorSerializer
 
     def get_queryset(self):
