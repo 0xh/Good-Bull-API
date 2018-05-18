@@ -108,13 +108,15 @@ def extract_page_data(page_text):
                 ABCDFQ = [int(letter_grade) for letter_grade in ABCDFQ]
                 yield ((dept, course, section_num), instructor, ABCDFQ)
                 i += LEN_SECTION_ROW
-            except ValueError:
+            except ValueError as e:
                 # For some reason, A&M thought it was a good idea
                 # to include sections that had TBA professors all semester?
                 # Dunno why this is, but there's a missing entry at the
                 # end of some rows. Just move to the next row.
-                # How would we correlate the professor an
+                # How would we correlate the professor?
                 i += LEN_SECTION_ROW - 1
+                print(section_row)
+                print(e)
 
 
 def extract_pdf_data(pdf_reader):
@@ -145,8 +147,8 @@ def generate_terms():
     SPRING = '1'
     SUMMER = '2'
     FALL = '3'
-    SEMESTERS = [FALL] #[SPRING, SUMMER, FALL]
-    YEARS = map(str, [2017])#range(datetime.now().year, 2013, -1))
+    SEMESTERS = [SPRING, SUMMER, FALL]
+    YEARS = map(str, range(datetime.now().year, 2013, -1))
     for year in YEARS:
         for semester in SEMESTERS:
             yield year + semester

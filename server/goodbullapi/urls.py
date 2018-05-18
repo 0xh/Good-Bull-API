@@ -13,5 +13,6 @@ urlpatterns = [
     url(r'courses/(?P<term_code>.+)/(?P<dept>.+)/$', goodbullapi.views.CourseList.as_view()),
 
     url(r'sections/(?P<term_code>.+)/(?P<crn>.+)/$', goodbullapi.views.SectionRetrieve.as_view()),
+    url(r'instructors/(?P<dept>.+)/(?P<course_num>.+)/$', goodbullapi.views.InstructorListByCourse.as_view()),
     url(r'instructors/(?P<pk>.+)/$', goodbullapi.views.InstructorRetrieve.as_view())
 ]
