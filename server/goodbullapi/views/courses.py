@@ -3,7 +3,7 @@ from goodbullapi.serializers import CourseSerializer
 from rest_framework import generics
 from django.shortcuts import get_object_or_404
 
-class CourseList(generics.ListAPIView):
+class CourseListByDepartment(generics.ListAPIView):
     serializer_class = CourseSerializer
 
     def get_queryset(self):
