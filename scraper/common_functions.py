@@ -20,7 +20,7 @@ def request_term_codes():
     FIRST_TERM_2013 = -36
 
     # Offset from the beginning of the list of term codes
-    CURRENT_TERM = 12
+    CURRENT_TERM = 1
 
     options = [option['value']
                for option in options[CURRENT_TERM:FIRST_TERM_2013]]

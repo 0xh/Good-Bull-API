@@ -108,7 +108,7 @@ def extract_page_data(page_text):
                 ABCDFQ = [int(letter_grade) for letter_grade in ABCDFQ]
                 yield ((dept, course, section_num), instructor, ABCDFQ)
                 i += LEN_SECTION_ROW
-            except ValueError as e:
+            except ValueError:
                 # For some reason, A&M thought it was a good idea
                 # to include sections that had TBA professors all semester?
                 # Dunno why this is, but there's a missing entry at the
@@ -145,8 +145,8 @@ def generate_terms():
     SPRING = '1'
     SUMMER = '2'
     FALL = '3'
-    SEMESTERS = [SPRING, SUMMER, FALL]
-    YEARS = map(str, range(datetime.now().year, 2013, -1))
+    SEMESTERS = [FALL] #[SPRING, SUMMER, FALL]
+    YEARS = map(str, [2017])#range(datetime.now().year, 2013, -1))
     for year in YEARS:
         for semester in SEMESTERS:
             yield year + semester
@@ -212,8 +212,11 @@ if __name__ == '__main__':
                         try:
                             instructor = Instructor.objects.get(name=instructor_name, _id=instructor_id)
                         except Instructor.DoesNotExist:
-                            print('Instructor not found.')
                             instructor = Instructor.objects.create(name=instructor_name, _id=instructor_id)
                         if section:
-                            (g, created) = GPADistribution.objects.update_or_create(
-                                section=section, ABCDFQ=ABCDFQ, gpa=calculate_gpa(ABCDFQ), instructor=instructor)
+                            try:
+                                g = GPADistribution(
+                                    section=section, ABCDFQ=ABCDFQ, gpa=calculate_gpa(ABCDFQ), instructor=instructor)
+                                g.save()
+                            except Exception as e:
+                                raise e

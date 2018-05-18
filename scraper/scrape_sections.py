@@ -78,9 +78,8 @@ def extract_credits(field_data):
                 results = (exact_credits, exact_credits)
             else:
                 results = results[0]
-            break
-    least_credits, most_credits = results
-    return float(least_credits), float(most_credits)
+            least_credits, most_credits = results
+            return float(least_credits), float(most_credits)
 
 
 def extract_meetings(meeting_data):

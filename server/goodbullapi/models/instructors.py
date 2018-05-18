@@ -7,7 +7,7 @@ class GPADistribution(models.Model):
     ABCDFQ = ArrayField(models.IntegerField())
     gpa = models.FloatField(verbose_name="The overall course GPA.")
     section = models.OneToOneField(
-        Section, on_delete=models.CASCADE, related_name="gpa_distribution")
+        Section, on_delete=models.CASCADE, related_name="gpa_distribution", primary_key=True)
     instructor = models.ForeignKey(
        'Instructor', on_delete=models.CASCADE, related_name='sections_taught', null=True)
 
