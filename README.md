@@ -9,7 +9,7 @@ Design a consistent and robust API that allows students to individually query fo
 - [X] Buildings, which includes addresses, zip codes, cities, names, and abbreviations.
 - [X] Courses, which includes course descriptions, semesters in which it was tradtionally offered, as well as credit hours and number of hours spent in lecture, laboratory, and recitation.
 - [X] Sections, which includes meeting times, instructors, and locations.
-- [ ] Instructors, which includes their historical grade distributions, their historical GPA, as well as their cumulative grade distribution and cumulative GPA.
+- [X] Instructors, which includes their historical grade distributions, their historical GPA, as well as their cumulative grade distribution and cumulative GPA.
 
 ## Moving Forward
 We'd like to include more and more information of the Howdy portal. It's a damn shame that not all of this information is easily accessible, but we're doing our best with what we have.
