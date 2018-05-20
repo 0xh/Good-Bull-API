@@ -1,5 +1,6 @@
 server/db.sqlite3
-*/pdfs/
+*pdfs/
+.vscode
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

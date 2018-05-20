@@ -11,7 +11,7 @@ import sync_with_django_orm
 from goodbullapi.models import GPADistribution, Instructor, Section
 
 LEN_HEADER_ROW = 38
-
+LEN_OLD_HEADER_ROW = 37
 LEN_SECTION_ROW = 20
 LEN_COURSE_TOTAL_ROW = LEN_COLLEGE_TOTAL_ROW = LEN_DEPT_TOTAL_ROW = 19
 
@@ -38,6 +38,14 @@ def is_header_row(text):
     Used to skip rows.
     """
     return text == 'SECTION'
+
+
+def is_old_header_row(text):
+    """
+    Prior to 2017, the encoding for grade distribution PDFs was very slightly different
+    from post-2017 grade distribution PDFs. It's handled accordingly here.
+    """
+    return text == 'COLLEGE:'
 
 
 def is_course_total_row(text):
@@ -80,7 +88,7 @@ def open_pdf(path):
         print("Tried to open invalid PDF. This is expected behavior, due to inconsistencies in TAMU data. Skipping this PDF.")
 
 
-def extract_page_data(page_text):
+def extract_page_data(page_text, old_version=False):
     """
     Retrieves the letter grade distributions (number of As, Bs, Cs, etc.) for all of the
     sections on this page.
@@ -89,9 +97,13 @@ def extract_page_data(page_text):
     page_text = page_text.split('\n')
     page_text = [elem.strip() for elem in page_text]
     i = 0
+    old_pdf_style = False
     while i < len(page_text):
         if is_header_row(page_text[i]):
             i += LEN_HEADER_ROW
+        elif is_old_header_row(page_text[i]):
+            i += LEN_OLD_HEADER_ROW
+            old_pdf_style = True
         elif is_course_total_row(page_text[i]):
             i += LEN_COURSE_TOTAL_ROW
         elif is_college_total_row(page_text[i]):
@@ -102,9 +114,18 @@ def extract_page_data(page_text):
             section_row = page_text[i:i+LEN_SECTION_ROW]
             try:
                 dept, course, section_num = section_row[0].split('-')
-                instructor = section_row[-1]
-                ABCDFQ = section_row[1:10:2]
-                ABCDFQ.append(section_row[16])
+                INSTRUCTOR_INDEX = ABCDF_SLICE = Q_INDEX = None
+                if not old_pdf_style:
+                    INSTRUCTOR_INDEX = -1
+                    ABCDF_SLICE = slice(1, 10, 2)
+                    Q_INDEX = 16
+                else:
+                    INSTRUCTOR_INDEX = 2
+                    ABCDF_SLICE = slice(4, 9)
+                    Q_INDEX = 14
+                instructor = section_row[INSTRUCTOR_INDEX]
+                ABCDFQ = section_row[ABCDF_SLICE]
+                ABCDFQ.append(section_row[Q_INDEX])
                 ABCDFQ = [int(letter_grade) for letter_grade in ABCDFQ]
                 yield ((dept, course, section_num), instructor, ABCDFQ)
                 i += LEN_SECTION_ROW
@@ -115,8 +136,6 @@ def extract_page_data(page_text):
                 # end of some rows. Just move to the next row.
                 # How would we correlate the professor?
                 i += LEN_SECTION_ROW - 1
-                print(section_row)
-                print(e)
 
 
 def extract_pdf_data(pdf_reader):
@@ -184,15 +203,17 @@ def calculate_gpa(ABCDFQ):
 if __name__ == '__main__':
 
     for url in generate_urls():
-        pprint(url)
         download_path = download_pdf(url)
         term = url[-11:-6]
         abbr = url[-6:-4]
+        print(term + abbr)
         if download_path:
+            # 
             pdf_reader = open_pdf(download_path)
             if pdf_reader:
                 for section_gpa_data in extract_pdf_data(pdf_reader):
-                    (dept, course_num, section_num), instructor_name, ABCDFQ = section_gpa_data
+                    (dept, course_num,
+                     section_num), instructor_name, ABCDFQ = section_gpa_data
 
                     COLLEGE_STATION = '1'
                     GALVESTON = '2'
@@ -212,9 +233,11 @@ if __name__ == '__main__':
                         instructor = None
                         instructor_id = re.sub(' ', '_', instructor_name)
                         try:
-                            instructor = Instructor.objects.get(name=instructor_name, _id=instructor_id)
+                            instructor = Instructor.objects.get(
+                                name=instructor_name, _id=instructor_id)
                         except Instructor.DoesNotExist:
-                            instructor = Instructor.objects.create(name=instructor_name, _id=instructor_id)
+                            instructor = Instructor.objects.create(
+                                name=instructor_name, _id=instructor_id)
                         if section:
                             try:
                                 g = GPADistribution(
