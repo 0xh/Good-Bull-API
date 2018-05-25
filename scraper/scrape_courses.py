@@ -1,13 +1,31 @@
 import re
 
 import requests
-from bs4 import BeautifulSoup
-from django.db import transaction
 
-
+import helpful_regex
 import sync_with_django_orm
+from bs4 import BeautifulSoup
 from common_functions import request_depts, request_term_codes
+from django.db import transaction
 from goodbullapi.models import Course
+from rest_framework import status
+
+
+def request_html(url):
+    r = requests.get(url)
+    if r.status_code == status.HTTP_200_OK:
+        return r.text
+    elif r.status_code == status.HTTP_404_NOT_FOUND:
+        # It's okay to not find a page. This means that
+        # the department is not offered to graduates/undergraduates
+        # (depends on the url)
+        return None
+    else:
+        r.raise_for_status()
+
+
+def extract_course_title(course_block_title_text):
+    return re.findall(helpful_regex.COURSE_EXTRACT_TITLE, course_block_title_text)[0]
 
 
 @transaction.atomic
@@ -17,31 +35,17 @@ def collect(dept, term_code):
         'http://catalog.tamu.edu/graduate/course-descriptions/'
     ]
 
-    for url in URLS:
-        url = url + dept.lower()
-        r = requests.get(url)
-        # Sometimes a course is offered to undergrads and not grads, & vice
-        # versa
-        if r.status_code == 200:
-            soup = BeautifulSoup(r.text, 'html.parser')
+    for base_url in URLS:
+        url = base_url + dept.lower()
+        page_html = request_html(url)
+        if page_html:
+            soup = BeautifulSoup(page_html, 'html.parser')
             courses = soup.find_all(class_='courseblock')
             for course in courses:
-                title = course.find(class_='courseblocktitle').text
-                split_title = re.split(r'[\W]', title)
-
-                # Get the course number (as it's offered in this department)
-                course_num = split_title[1]
-
-                # Sometimes a course if offered in multiple departments, avoid
-                # including the other departments
-                if '/' in title:
-                    split_title = split_title[4:]
-
-                # Build the formal course name
-                name = ' '.join(split_title[2:]).strip()
-                name = re.sub(' +', ' ', name)
-                if len(name) > 100:
-                    print(name)
+                course_block_title_text = course.find(
+                    class_='courseblocktitle').text
+                title = extract_course_title(course_block_title_text)
+                
                 hours = course.find(class_='hours').text
                 credits = hours[0]
                 split_hours = hours.split('. ')
