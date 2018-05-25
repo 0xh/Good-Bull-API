@@ -8,3 +8,5 @@ VARYING_CREDITS_PATTERN = re.compile(
 
 INSTRUCTOR_PATTERN = re.compile(
     '(?:Instructor:|Instructors:) (?P<instructors>[\w .-]+)(?:,| \(P\)| College| Galveston| Qatar)')
+
+COURSE_EXTRACT_TITLE = re.compile('(?<=\d{3} ).*')
