@@ -15,6 +15,7 @@ class Command(BaseCommand):
         for row in stream_csv(BUILDING_CSV):
             # CSV rows for some reason include blanks at the end of each row.
             row = row[:8]
+
             abbreviation, name, location_desc, year_built, num_floors, address, city, zip_code = row
             if not year_built:
                 year_built = None
@@ -26,7 +27,6 @@ class Command(BaseCommand):
                 num_floors = int(num_floors)
 
             searchable_string = '{} {}'.format(abbreviation, name)
-            print(searchable_string)
             b = Building(abbr=abbreviation, name=name, location_description=location_desc,
                          year_built=year_built, num_floors=num_floors, address=address, city=city, zip_code=zip_code, searchable_field=searchable_string)
             b.save()
