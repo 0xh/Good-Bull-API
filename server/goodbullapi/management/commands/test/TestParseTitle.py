@@ -1,8 +1,10 @@
 import unittest
 from _functions.functions import parse_title
+import requests
 
 
-class ParseTitleTests(unittest.TestCase):
+class TestParseTitle(unittest.TestCase):
+
     def test_basic_title(self):
         TEST_STRING = 'AALO 285 Directed Studies'
         EXPECTED = ('285', 'Directed Studies')

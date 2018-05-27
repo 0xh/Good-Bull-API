@@ -3,7 +3,7 @@ from goodbullapi.models import Building
 from django.db import transaction
 from django.contrib.postgres.search import SearchVector
 
-from ._functions import stream_csv
+from ._functions.functions import stream_csv
 
 
 class Command(BaseCommand):
