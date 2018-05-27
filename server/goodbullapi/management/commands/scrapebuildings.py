@@ -1,9 +1,9 @@
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import BaseCommand
 from goodbullapi.models import Building
 from django.db import transaction
 from django.contrib.postgres.search import SearchVector
 
-from ._common_functions import stream_csv
+from ._functions import stream_csv
 
 
 class Command(BaseCommand):
@@ -13,7 +13,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         BUILDING_CSV = 'http://fcor.tamu.edu/webreporter/exportv6.asp?fm=2&t=[Current_Inv_Bldgs]&strSQL=Select%20[BldgAbbr],%20[BldgName],%20[LocDesc],%20[YearBuilt],%20[NumFloors],%20[Address],%20[City],%20[Zip]%20From%20[Current_Inv_Bldgs]%20Where%20BldgAbbr%20Like%20~^^~'
         for row in stream_csv(BUILDING_CSV):
-            # CSV rows for some reason include blanks at the end of each row.
+            # This CSV for some reason include blanks at the end of each row.
             row = row[:8]
 
             abbreviation, name, location_desc, year_built, num_floors, address, city, zip_code = row
