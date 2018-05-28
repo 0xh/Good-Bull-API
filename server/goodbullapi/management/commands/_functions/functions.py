@@ -5,8 +5,7 @@ import urllib
 from pprint import pprint
 
 import requests
-
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, NavigableString
 
 
 def stream_csv(url):
@@ -22,7 +21,7 @@ def stream_csv(url):
         yield row
 
 
-def request_html(url):
+def request_html(url, headers=None):
     """
     Given a URL, makes a request to that
     URL, and returns the HTML.
@@ -184,3 +183,101 @@ def request_catalog_instructors():
             # The format of their name is "lastname, firstname"
             lastname, firstname = name.split(', ')[:2]
             yield lastname, firstname
+
+
+def request_compass_depts(term_code):
+    """
+    Given a term code, requests all of the departments
+    offering courses during that term.
+    """
+    URL = 'https://compass-ssb.tamu.edu/pls/PROD/bwckgens.p_proc_term_date'
+    FORM_DATA = {
+        'p_calling_proc': 'bwckschd.p_disp_dyn_sched',
+        'p_term': term_code
+    }
+    response = requests.post(URL, FORM_DATA)
+    soup = BeautifulSoup(response.text, 'html.parser')
+    options = soup.find(id='subj_id').find_all('option')
+    for option in options:
+        yield option['value']
+
+
+def is_professional_term(term_code):
+    return term_code[4] == '4'
+
+
+def is_half_year_term(term_code):
+    return term_code[-1] == '5'
+
+
+def is_term_of_interest(term_code):
+    """
+    Wrapper function to ensure that the term is neither
+    a professional term (irrelevant to most students)
+    nor a half-year term (not even sure what that is)
+    """
+    return not is_half_year_term(term_code) and not is_professional_term(term_code)
+
+
+def request_compass_term_codes(full_scrape=False):
+    """
+    Retrieves all of the term codes of the compass section catalog.
+    Takes one argument, `full_scrape` (Boolean)
+    - True: Scrape every term code available (time-consuming, should only be done once every month or so)
+    - False: Scrape the first twelve terms (quick, used for frequent updating)
+    """
+    URL = 'https://compass-ssb.tamu.edu/pls/PROD/bwckschd.p_disp_dyn_sched'
+    HEADERS = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/59.0.3071.115 Safari/537.36'
+    }
+    html = request_html(URL, headers=HEADERS)
+    soup = BeautifulSoup(html, 'lxml')
+    options = soup.find_all('option', {'value': True})
+
+    # Using slice notation
+    LAST_TERM_TO_SCRAPE = -35
+    SHALLOW_SCRAPE_CUTOFF = 12
+    CURRENT_TERM = 1
+
+    if not full_scrape:
+        LAST_TERM_TO_SCRAPE = SHALLOW_SCRAPE_CUTOFF
+
+    for option in options[CURRENT_TERM:LAST_TERM_TO_SCRAPE]:
+        if is_term_of_interest(option['value']):
+            yield option['value']
+
+
+def merge_trs(outer_datadisplaytable):
+    """
+    Because of the terrible way that the Howdy portal is written,
+    we have to merge the title of a section with its data
+    (they're represented in separate rows of the table they're in).
+    """
+    trs = outer_datadisplaytable.contents[1:]
+    trs = [tr for tr in trs if not isinstance(tr, NavigableString)]
+    merged = []
+    for tr in trs:
+        if tr.select_one('th.ddtitle'):
+            merged.append(tr)
+        elif tr.select_one('td.dddefault'):
+            merged[-1] = BeautifulSoup(str(merged[-1]) + str(tr), 'lxml')
+    return merged
+
+
+def request_compass_sections(dept, term_code):
+    """
+    Provided a department and term code,
+    scrapes all of the sections for that department
+    during that term.
+    """
+    URL = 'https://compass-ssb.tamu.edu/pls/PROD/bwckschd.p_get_crse_unsec?term_in={}&sel_subj=dummy&sel_day=dummy&sel_schd=dummy&sel_insm=dummy&sel_camp=dummy&sel_levl=dummy&sel_sess=dummy&sel_instr=dummy&sel_ptrm=dummy&sel_attr=dummy&sel_subj={}&sel_crse=&sel_title=&sel_schd=%25&sel_insm=%25&sel_from_cred=&sel_to_cred=&sel_camp=%25&sel_levl=%25&sel_ptrm=%25&sel_instr=%25&sel_attr=%25&begin_hh=0&begin_mi=0&begin_ap=a&end_hh=0&end_mi=0&end_ap=a'.format(
+        term_code,
+        dept)
+    HEADERS = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/59.0.3071.115 Safari/537.36'
+    }
+    html = request_html(URL, headers=HEADERS)
+    soup = BeautifulSoup(html, 'lxml')
+    outer_datadisplaytable = soup.select_one('table.datadisplaytable')
+    section_elements = merge_trs(outer_datadisplaytable)
+    pprint(section_elements)

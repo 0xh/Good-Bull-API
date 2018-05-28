@@ -12,7 +12,7 @@ from ._functions.functions import request_catalog_instructors
 
 
 class Command(BaseCommand):
-    help = 'Retrieves all of the courses in the Texas A&M University course catalogs'
+    help = 'Retrieves all of the instructors in the Texas A&M University course catalogs'
 
     @transaction.atomic
     def handle(self, *args, **options):
