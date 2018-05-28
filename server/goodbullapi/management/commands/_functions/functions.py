@@ -159,3 +159,28 @@ def parse_course_block(course_block):
         course_block_desc)
 
     return course_num, title, min_credits, max_credits, distribution_of_hours, description, prereqs, coreqs
+
+
+def request_catalog_instructors():
+    """
+    Searches the graduate and undergraduate faculty lists,
+    and returns all of the (lastname, firstname) pairs 
+    of each faculty listed.
+    """
+    FACULTY_URL = 'http://catalog.tamu.edu/{education_level}/faculty'
+    UNDERGRADUATE = 'undergraduate'
+    GRADUATE = 'graduate'
+    education_levels = [UNDERGRADUATE, GRADUATE]
+    for edu_lvl in education_levels:
+        url = FACULTY_URL.format(education_level=edu_lvl)
+        html = request_html(url)
+        soup = BeautifulSoup(html, 'lxml')
+        instructor_blocks = soup.select('.keeptogether > p')
+        for instructor_block in instructor_blocks:
+            # Generates empty string at beginning (for opening p)
+            # and newline, empty string at end (for last br, and closing p)
+            # Name is always located in the 1st position (not 0th)
+            name = re.split(r'<p>|<br/>|</p>', str(instructor_block))[1]
+            # The format of their name is "lastname, firstname"
+            lastname, firstname = name.split(', ')[:2]
+            yield lastname, firstname
