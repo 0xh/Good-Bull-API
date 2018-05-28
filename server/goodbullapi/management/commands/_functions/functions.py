@@ -137,7 +137,7 @@ def get_element_text(soup, css_tag):
     returns the sanitized (whitespace and non-breaking spaces removed)
     text contained in that element.
     """
-    text = soup.select_one(css_tag)
+    text = soup.select_one(css_tag).get_text()
     return sanitize(text)
 
 

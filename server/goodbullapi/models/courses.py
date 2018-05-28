@@ -1,5 +1,5 @@
 from django.db import models
-
+from django.contrib.postgres.search import SearchVectorField
 
 class Course(models.Model):
     _id = models.CharField(max_length=10, primary_key=True)
@@ -12,7 +12,8 @@ class Course(models.Model):
     coreqs = models.TextField(null=True)
     min_credits = models.IntegerField(verbose_name='Minimum number of credits this course can count for')
     max_credits = models.IntegerField(verbose_name='Maximum number of credits this course can count for')
-
+    searchable_field = models.CharField(max_length=110)
+    search_vector = SearchVectorField()
 
     class Meta:
         ordering = ('dept', 'course_num')

@@ -4,6 +4,7 @@ from pprint import pprint
 from bs4 import BeautifulSoup
 from django.core.management.base import BaseCommand
 from django.db import transaction
+from django.contrib.postgres.search import SearchVector
 
 from goodbullapi.models import Course
 
@@ -32,15 +33,10 @@ class Command(BaseCommand):
                         course_num, title, min_credits, max_credits, distribution_of_hours, description, prereqs, coreqs = results
                         _id = '{dept}_{course_num}'.format(
                             dept=abbr, course_num=course_num)
+                        searchable_field = '{} {} {}'.format(
+                            abbr, course_num, title)
                         c = Course(_id=_id, dept=abbr, course_num=course_num, name=title, min_credits=min_credits, max_credits=max_credits,
-                                   distribution_of_hours=distribution_of_hours, description=description, prereqs=prereqs, coreqs=coreqs)
-                        try:
-                            c.save()
-                        except Exception as e:
-                            pprint(c.__dict__)
-                            lengths = {}
-                            for key in c.__dict__:
-                                if isinstance(c.__dict__[key], str):
-                                    lengths[key] = len(c.__dict__[key])
-                            pprint(lengths)
-                            raise e
+                                   distribution_of_hours=distribution_of_hours, description=description, prereqs=prereqs, coreqs=coreqs, searchable_field=searchable_field)
+                        c.save()
+            Course.objects.update(
+                search_vector=SearchVector('searchable_field'))
