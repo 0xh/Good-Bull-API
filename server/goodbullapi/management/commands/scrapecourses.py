@@ -1,20 +1,16 @@
-import re
-from pprint import pprint
-
 from bs4 import BeautifulSoup
+from django.contrib.postgres.search import SearchVector
 from django.core.management.base import BaseCommand
 from django.db import transaction
-from django.contrib.postgres.search import SearchVector
 
-from goodbullapi.models import Course
+from goodbullapi.models import Building, Course
 
-from ._functions.functions import (parse_course_block, parse_credits,
-                                   parse_title, request_catalog_departments,
-                                   request_html, sanitize)
+from ._functions.functions import (parse_course_block, request_catalog_depts,
+                                   request_html)
 
 
 class Command(BaseCommand):
-    help = 'Retrieves all of the courses in the Texas A&M University course catalogs'
+    help = 'Retrieves all of the courses in the Texas A&M University system'
 
     @transaction.atomic
     def handle(self, *args, **options):
@@ -22,7 +18,7 @@ class Command(BaseCommand):
         GRADUATE = 'graduate'
         education_levels = [UNDERGRADUATE, GRADUATE]
         for edu_lvl in education_levels:
-            for abbr, url in request_catalog_departments(edu_lvl):
+            for abbr, url in request_catalog_depts(edu_lvl):
                 print(abbr)
                 html = request_html(url)
                 soup = BeautifulSoup(html, 'lxml')
@@ -38,5 +34,5 @@ class Command(BaseCommand):
                         c = Course(_id=_id, dept=abbr, course_num=course_num, name=title, min_credits=min_credits, max_credits=max_credits,
                                    distribution_of_hours=distribution_of_hours, description=description, prereqs=prereqs, coreqs=coreqs, searchable_field=searchable_field)
                         c.save()
-            Course.objects.update(
-                search_vector=SearchVector('searchable_field'))
+        Course.objects.update(
+            search_vector=SearchVector('searchable_field'))
