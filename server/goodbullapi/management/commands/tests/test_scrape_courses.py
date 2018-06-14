@@ -59,12 +59,24 @@ class ScrapeCoursesTestCase(test.TestCase):
         html = """
                 <p class="hours noindent">
                     <strong>
-                        Credits 1. 1 Other Hours.
+                        Credits 3. 3 Lecture Hours. 
                     </strong>
                 </p>
                 """
         soup = BeautifulSoup(html, 'lxml')
-        expected = (1, 1, '1 Other Hours.')
+        expected = (3, 3, '3 Lecture Hours.')
+        actual = course_scraper.parse_hours(soup)
+        self.assertTupleEqual(expected, actual)
+
+        html = """
+                <p class="hours noindent">
+                    <strong>
+                        Credits 0.
+                    </strong>
+                </p>
+                """
+        soup = BeautifulSoup(html, 'lxml')
+        expected = (0, 0, '')
         actual = course_scraper.parse_hours(soup)
         self.assertTupleEqual(expected, actual)
 

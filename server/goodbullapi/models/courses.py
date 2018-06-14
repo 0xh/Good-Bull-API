@@ -10,8 +10,8 @@ class Course(models.Model):
     description = models.TextField(max_length=500)
     prereqs = models.TextField(null=True)
     coreqs = models.TextField(null=True)
-    min_credits = models.IntegerField(verbose_name='Minimum number of credits this course can count for')
-    max_credits = models.IntegerField(verbose_name='Maximum number of credits this course can count for')
+    min_credits = models.FloatField(verbose_name='Minimum number of credits this course can count for')
+    max_credits = models.FloatField(verbose_name='Maximum number of credits this course can count for')
     searchable_field = models.CharField(max_length=110)
     search_vector = SearchVectorField()
 

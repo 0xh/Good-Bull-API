@@ -1,5 +1,5 @@
 import re
-from pprint import pprint
+from pprint import pprint as print
 from typing import List, Tuple, NewType
 
 import requests
@@ -8,6 +8,7 @@ from bs4 import BeautifulSoup, Tag
 from django import db  # Used for transaction.atomic
 from django.contrib.postgres import search  # Used for SearchVector
 from django.core.management import base
+import goodbullapi.models as gba_models
 
 from goodbullapi.management.commands import \
     _common_functions as common_functions
@@ -26,22 +27,17 @@ def collect_departments(dept_list_html: bs4.BeautifulSoup) -> List[Tuple[str, st
     Returns:
         A list of tuples of format (URL path, dept abbreviation)
     """
-    a_elements = dept_list_html.select("#atozindex > ul > li > a")
+    a_elements = dept_list_html.select('#atozindex > ul > li > a')
     url_dept_pairs = []
     for a in a_elements:
         try:
-            ABBR_PATTERN = re.compile("(?P<dept>^[a-zA-Z]{3,4})")
+            ABBR_PATTERN = re.compile('(?P<dept>^[a-zA-Z]{3,4})')
             dept_abbr = re.findall(ABBR_PATTERN, a.text)[0]
-            url_dept_pairs.append((a["href"], dept_abbr))
+            url_dept_pairs.append((a['href'], dept_abbr))
         except Exception as e:
             pprint(a)
             raise e
     return url_dept_pairs
-
-
-def sanitize(string: str) -> str:
-    """Takes a string and replaces Unicode characters with single spaces."""
-    return ''.join([i if ord(i) < 128 else ' ' for i in string]).strip()
 
 
 def parse_courseblocktitle(courseblocktitle: bs4.BeautifulSoup) -> Tuple[str, str]:
@@ -55,8 +51,11 @@ def parse_courseblocktitle(courseblocktitle: bs4.BeautifulSoup) -> Tuple[str, st
     COURSE_NUM_NAME_PATTERN = re.compile(
         '(?:[a-zA-Z]{3,4}[0-9]?) (?P<course_num>[0-9]{3,4}[a-zA-Z]?) (?P<name>.*)')
     title_text = courseblocktitle.select_one('strong').text
-    title_text = sanitize(title_text)
-    return re.findall(COURSE_NUM_NAME_PATTERN, title_text)[0]
+    title_text = common_functions.sanitize(title_text)
+    try:
+        return re.findall(COURSE_NUM_NAME_PATTERN, title_text)[0]
+    except Exception:
+        print(title_text)
 
 
 def parse_hours(hours: bs4.BeautifulSoup) -> Tuple[int, int, str]:
@@ -68,15 +67,16 @@ def parse_hours(hours: bs4.BeautifulSoup) -> Tuple[int, int, str]:
         A triple of format (min_hours, max_hours, Number of hours in lecture, lab, etc.)
     """
     CREDITS_PATTERN = re.compile(
-        'Credits (?P<min>\d{1,2})(?:(?:-| to | or )(?P<max>\d{1,2}))?\. (?P<distribution>.*)')
+        r'Credits? (?P<min>[\d.]{1,3})(?:(?:-| to | or )(?P<max>[\d.]{1,3}))?.(?P<distribution>$|.*)')
     hours_text = hours.select_one('strong').text
-    hours_text = sanitize(hours_text)
+    hours_text = common_functions.sanitize(hours_text)
     results = re.findall(CREDITS_PATTERN, hours_text)[0]
     min_hours = max_hours = distribution = None
     min_hours, max_hours, distribution = results
-    min_hours = int(min_hours)
+    distribution = distribution.strip()
+    min_hours = float(min_hours)
     if max_hours:
-        max_hours = int(max_hours)
+        max_hours = float(max_hours)
     else:
         max_hours = min_hours
     return (min_hours, max_hours, distribution)
@@ -97,7 +97,7 @@ def parse_description(courseblockdesc: bs4.BeautifulSoup) -> Tuple[str, str, str
     COREQS_PATTERN = re.compile(
         ' Corequisites?: (?P<coreqs>.+?(?= Prerequisites?: | Cross-Listings?: |$))')
     description_text = courseblockdesc.text
-    description_text = sanitize(description_text)
+    description_text = common_functions.sanitize(description_text)
     description = re.findall(DESCRIPTION_PATTERN, description_text)[0].strip()
     prereqs = re.findall(PREREQS_PATTERN, description_text)
     if prereqs:
@@ -121,7 +121,10 @@ def parse_courseblock(courseblock: bs4.BeautifulSoup):
         A CourseFields (see above definition)
     """
     courseblocktitle = courseblock.select_one('.courseblocktitle')
-    course_num, name = parse_courseblocktitle(courseblocktitle)
+    results = parse_courseblocktitle(courseblocktitle)
+    if not results:
+        return
+    course_num, name = results
     hours = courseblock.select_one('.hours')
     min_hours, max_hours, distribution = parse_hours(hours)
     courseblockdesc = courseblock.select_one('.courseblockdesc')
@@ -144,5 +147,21 @@ class Command(base.BaseCommand):
                 for courseblock in courseblocks:
                     results = parse_courseblock(
                         courseblock)
-                    print(results)
-                    
+                    if results:
+                        course_num, name, min_hours, max_hours, distribution, description, prereqs, coreqs = results
+                        _id = '%s-%s' % (dept, course_num)
+                        searchable_field = '%s %s' % (_id, name)
+                        course = gba_models.Course(_id=_id,
+                                                   dept=dept,
+                                                   course_num=course_num,
+                                                   name=name,
+                                                   distribution_of_hours=distribution,
+                                                   description=description,
+                                                   prereqs=prereqs,
+                                                   coreqs=coreqs,
+                                                   min_credits=min_hours,
+                                                   max_credits=max_hours,
+                                                   searchable_field=searchable_field)
+                        course.save()
+        gba_models.Course.objects.update(
+            search_vector=search.SearchVector('searchable_field'))
