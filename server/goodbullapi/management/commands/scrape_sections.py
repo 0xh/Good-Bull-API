@@ -90,6 +90,17 @@ def parse_ddtitle(ddtitle):
     name = ' '.join(split_text[0:-3])
     return (name, crn, section_num)
 
+def parse_dddefault(dddefault: bs4.BeautifulSoup):
+    """Extracts the number of credits and the meetings from a dddefault element.
+
+    Args:
+        dddefault: A dddefault element that contains credits and meeting data.
+    Returns:
+        min_credits: The minimum number of credits that this section can be worth.
+        max_credits: The minimum number of credits that this section can be worth.
+        meetings: A list of Meeting instances.
+    """
+    pass    # WIP
 
 def extract_tr_data(tr):
     """Extract section data from tr.
