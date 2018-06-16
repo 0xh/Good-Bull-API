@@ -27,7 +27,7 @@ class ScrapeSectionsTestCase(test.TestCase):
                 </th>
                 """
         soup = BeautifulSoup(html, 'lxml')
-        expected = ('SURVEY OF ACCT PRIN', 10001, '501')
+        expected = ('SURVEY OF ACCT PRIN', 10001, '209', '501')
         actual = section_scraper.parse_ddtitle(soup)
         self.assertTupleEqual(expected, actual)
 
