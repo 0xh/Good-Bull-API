@@ -1,5 +1,6 @@
 import goodbullapi.management.commands._common_functions as common_functions
 from django.core.management.base import BaseCommand
+import re
 from pprint import pprint as print
 from goodbullapi.models import Building
 from typing import List
@@ -87,8 +88,37 @@ def parse_ddtitle(ddtitle):
     split_text = title_text.split(' - ')
     section_num = split_text[-1]
     crn = int(split_text[-3])
+    _, course_num = split_text[-2].split(' ')
+
     name = ' '.join(split_text[0:-3])
-    return (name, crn, section_num)
+    return name, crn, course_num, section_num
+
+
+def parse_credits(dddefault: bs4.BeautifulSoup):
+    """Extacts the number of credits from dddefault
+
+    Args:
+        dddefault: A bs4.BeautifulSoup instance
+    Returns:
+        min_credits: The minimum number of credits that this section can be worth
+        max_credits: The maximum number of credits that this section can be worth
+    """
+    CREDITS_PATTERN = re.compile(
+        '(?P<min>\d{1,2}\.\d{3})(?: TO | OR |$)?(?P<max>\d{1,2}\.\d{3})? Credits?')
+    try:
+        min_credits, max_credits = re.findall(
+            CREDITS_PATTERN, dddefault.text)[0]
+    except Exception as e:
+        print(dddefault.text)
+        raise e
+    print((min_credits, max_credits))
+    min_credits = float(min_credits)
+    if not max_credits:
+        max_credits = min_credits
+    else:
+        max_credits = float(max_credits)
+    return min_credits, max_credits
+
 
 def parse_dddefault(dddefault: bs4.BeautifulSoup):
     """Extracts the number of credits and the meetings from a dddefault element.
@@ -100,7 +130,9 @@ def parse_dddefault(dddefault: bs4.BeautifulSoup):
         max_credits: The minimum number of credits that this section can be worth.
         meetings: A list of Meeting instances.
     """
-    pass    # WIP
+    min_credits, max_credits = parse_credits(dddefault)
+    return min_credits, max_credits
+
 
 def extract_tr_data(tr):
     """Extract section data from tr.
@@ -113,8 +145,10 @@ def extract_tr_data(tr):
         section_num: The section number that, when combined with a department and course number, uniquely identifies this section.
     """
     ddtitle = tr.select_one('.ddtitle')
-    name, crn, section_num = parse_ddtitle(ddtitle)
-    return name, crn, section_num
+    name, crn, course_num, section_num = parse_ddtitle(ddtitle)
+    dddefault = tr.select_one('.dddefault')
+    min_credits, max_credits = parse_dddefault(dddefault)
+    return name, crn, course_num, section_num, min_credits, max_credits
 
 
 class Command(BaseCommand):
@@ -122,12 +156,13 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         term_codes = request_term_codes()[1:]
-        for term_code in term_codes[1:2]:
+        for term_code in term_codes[:1]:
             depts = request_depts(term_code)
-            for dept in depts[1:2]:
+            for dept in depts:
+                print(dept)
                 soup = request_dept_sections(term_code, dept)
                 outer_datadisplaytable = soup.select_one(
                     'table.datadisplaytable')
                 trs = merge_trs(outer_datadisplaytable)
-                for tr in trs[1:2]:
+                for tr in trs:
                     print(extract_tr_data(tr))
