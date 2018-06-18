@@ -5,12 +5,13 @@ from pprint import pprint as print
 from typing import List
 
 import bs4
+from django.contrib.postgres.search import SearchVector
 from django.core.management.base import BaseCommand
-from django.contrib.postgres.search import SearchQuery, SearchVector, SearchRank
-from django.db.models import F
+from django.db import transaction
+import requests
 
 import goodbullapi.management.commands._common_functions as common_functions
-from goodbullapi.models import Building, Instructor
+from goodbullapi.models import Instructor, Meeting, Course, Section
 
 HEADERS = {}
 
@@ -79,6 +80,36 @@ def merge_trs(outer_datadisplaytable):
     return merged
 
 
+def is_honors(name: str, section_num: str):
+    try:
+        section_num = int(section_num)
+        return (section_num >= 200 and section_num < 300) or name.startswith('HNR-')
+    except:
+        pass
+    return name.startswith('HNR-')
+
+
+def is_sptp(name: str, section_num: str):
+    """Determines if a function is a Special Topics course.
+
+    Args:
+        section_num: The section number.
+    """
+    return section_num in ['289', '489', '689'] or name.startswith('SPTP:')
+
+
+def strip_honors_prefix(name: str):
+    if 'HNR-' in name:
+        return name[4:].strip()
+    return name.strip()
+
+
+def strip_sptp_prefix(name: str):
+    if 'SPTP:' in name:
+        return name[5:].strip()
+    return name.strip()
+
+
 def parse_ddtitle(ddtitle):
     """Extracts the abbreviated name, CRN, and section number from the ddtitle.
 
@@ -97,6 +128,15 @@ def parse_ddtitle(ddtitle):
     _, course_num = split_text[-2].split(' ')
 
     name = ' '.join(split_text[0:-3])
+    honors = sptp = False
+    if is_honors(name, section_num):
+        honors = True
+        name = strip_honors_prefix(name)
+    if is_sptp(name, section_num):
+        sptp = True
+        name = strip_sptp_prefix(name)
+
+    # TODO: Return sptp and honors status
     return name, crn, course_num, section_num
 
 
@@ -110,7 +150,7 @@ def parse_hours(dddefault: bs4.BeautifulSoup):
         max_hours: The maximum number of hours that this section can be worth
     """
     HOURS_PATTERN = re.compile(
-        '(?:([\d\.]+)(?:\s+TO\s+|\s+OR\s+))?([\d\.]+)\s+Credits?')
+        '(?:([\d\.]+)(?:\s+TO\s+|\s+OR\s+))?([\d\.]+)\s+Credits?\n')
     try:
         min_hours, max_hours = re.findall(HOURS_PATTERN, dddefault.text)[0]
         max_hours = float(max_hours)
@@ -138,14 +178,14 @@ def parse_duration(duration_string):
     """
     TIME_FORMAT_STRING = '%I:%M %p'
     if is_tba(duration_string):
-        return None
+        return None, None
     start_string, end_string = duration_string.upper().split(' - ')
     start_string = start_string.strip()
     start_time = datetime.strptime(start_string, TIME_FORMAT_STRING)
 
     end_string = end_string.strip()
     end_time = datetime.strptime(end_string, TIME_FORMAT_STRING)
-    return end_time - start_time
+    return start_time, end_time
 
 
 def has_primary_mark(instructor):
@@ -160,24 +200,6 @@ def reduce_whitespace(string):
     return re.sub('\s+', ' ', string)
 
 
-def retrieve_building(location: str):
-    """Searches Building database for instance with name most similar to location (if not TBA).
-
-    Args:
-        location: The string to search on.
-    Returns:
-        The closest matching building instance (if not TBA, else None)
-    """
-    # TODO: SearchRanking removes stopwords
-    if is_tba(location):
-        return None
-    location = location.split(' ')[0]
-    query = SearchQuery(location.lower())
-    qset = Building.objects.annotate(rank=SearchRank(
-        F('search_vector'), query)).order_by('-rank').values_list('abbr', flat=True)
-    print(qset)
-    return None
-
 def retrieve_instructor(all_mentioned_instructors: List[str]):
     """Determines which of the instructors mentioned is the primary instructor.
 
@@ -191,12 +213,18 @@ def retrieve_instructor(all_mentioned_instructors: List[str]):
         instructors_mentioned = instructors_mentioned.split(',')
         for instructor in instructors_mentioned:
             if has_primary_mark(instructor):
-                instructor = strip_primary_mark(instructor)
-                primary_instructor_name = reduce_whitespace(instructor)
+                primary_instructor_name = instructor
+                break
     if not primary_instructor_name:
         cnt = collections.Counter(all_mentioned_instructors)
-        primary_instructor_name = cnt.most_common(1)[0]
-    instructor = Instructor.objects.get_or_create(name=primary_instructor_name)
+        primary_instructor_name, _ = cnt.most_common(1)[0]
+    if is_tba(primary_instructor_name):
+        return None
+    primary_instructor_name = reduce_whitespace(
+        strip_primary_mark(primary_instructor_name)).strip()
+    instructor, _ = Instructor.objects.get_or_create(
+        name=primary_instructor_name)
+    instructor.full_clean()
     return instructor
 
 
@@ -206,9 +234,11 @@ def parse_meetings_and_retrieve_instructor(dddefault: bs4.BeautifulSoup):
     Args:
         dddefault: A bs4.BeautifulSoup instance
     Returns:
-        A list of Meeting instances, and either an instructor instance or None
+        A list of Meeting instances, and either an Instructor instance or None
     """
     datadisplaytable = dddefault.select_one('.datadisplaytable')
+    if not datadisplaytable:
+        return None, None
     # Because TAMU doesn't know what `th` elements are, throw out the first row.
     rows = datadisplaytable.select('tr')[1:]
 
@@ -216,13 +246,18 @@ def parse_meetings_and_retrieve_instructor(dddefault: bs4.BeautifulSoup):
     meetings = []
     for row in rows:
         entries = [td.text.replace(u'\xa0', '') for td in row.select('td')]
-        print(entries)
         meet_type, duration_string, days, location, _, _, instructor_string = entries
-        duration = parse_duration(duration_string)
-        building = retrieve_building(location)
+        start_time, end_time = parse_duration(duration_string)
+
         all_mentioned_instructors.append(instructor_string)
 
-    instructor, _ = retrieve_instructor(all_mentioned_instructors)
+        if is_tba(location):
+            location = None
+        meeting = Meeting(location=location, meeting_days=days,
+                          start_time=start_time, end_time=end_time, meeting_type=meet_type)
+        meeting.save()
+        meetings.append(meeting)
+    instructor = retrieve_instructor(all_mentioned_instructors)
     return meetings, instructor
 
 
@@ -235,10 +270,11 @@ def parse_dddefault(dddefault: bs4.BeautifulSoup):
         min_hours: The minimum number of hours that this section can be worth.
         max_hours: The minimum number of hours that this section can be worth.
         meetings: A list of Meeting instances.
+        instructor: An instructor instance (if not TBA)
     """
     min_hours, max_hours = parse_hours(dddefault)
-    parse_meetings_and_retrieve_instructor(dddefault)
-    return min_hours, max_hours
+    meetings, instructor = parse_meetings_and_retrieve_instructor(dddefault)
+    return min_hours, max_hours, meetings, instructor
 
 
 def extract_tr_data(tr):
@@ -249,27 +285,90 @@ def extract_tr_data(tr):
     Returns:
         name: The abbreviated name of the section (used if the course doesn't exist)
         CRN: The unique Course Registration Number that identifies this section within a term.
+        course_num: The course number that identifies the course that this section belongs to.
         section_num: The section number that, when combined with a department and course number, uniquely identifies this section.
+        min_hours: The minimum number of hours that this section can count for.
+        max_hours: The maximum number of hours that this section can count for.
+        meetings: A list of Meeting instances.
+        instructor: An Instructor instance (or none if the instructor is TBA)
     """
     ddtitle = tr.select_one('.ddtitle')
     name, crn, course_num, section_num = parse_ddtitle(ddtitle)
     dddefault = tr.select_one('.dddefault')
-    min_hours, max_hours = parse_dddefault(dddefault)
-    return name, crn, course_num, section_num, min_hours, max_hours
+    min_hours, max_hours, meetings, instructor = parse_dddefault(dddefault)
+    return name, crn, course_num, section_num, min_hours, max_hours, meetings, instructor
+
+
+@transaction.atomic
+def collect(dept: str, term_code: int):
+    """Collects all of the sections offered by a department `dept` during `term_code`.
+
+    Args:
+        dept: The abbreviated department string.
+        term_code: A term code indicating what term to look for.
+    """
+    print(dept)
+    try:
+        soup = request_dept_sections(term_code, dept)
+        outer_datadisplaytable = soup.select_one('table.datadisplaytable')
+        trs = merge_trs(outer_datadisplaytable)
+        for tr in trs:
+            name, crn, course_num, section_num, min_hours, max_hours, meetings, instructor = extract_tr_data(
+                tr)
+            # Get or create the related Course instance
+            defaults = {
+                '_id': dept + '-' + course_num,
+                'dept': dept,
+                'course_num': course_num,
+                'name': name,
+                'description': None,
+                'searchable_field': dept + '-' + course_num + ' ' + name,
+                'min_credits': min_hours,
+                'max_credits': max_hours,
+            }
+            course, _ = Course.objects.get_or_create(
+                dept=dept, course_num=course_num, defaults=defaults)
+            _id = str(crn) + '_' + str(term_code)
+            section_defaults = {
+                '_id': _id,
+                'name': name,
+                'crn': crn,
+                'section_num': section_num,
+                'term_code': term_code,
+                'instructor': instructor,
+                'course': course
+            }
+            section, _ = Section.objects.update_or_create(
+                crn=crn, term_code=term_code, defaults=section_defaults)
+            if meetings:
+                section.meetings.set(meetings, clear=True)
+    except requests.exceptions.ConnectionError:
+        # To anybody reading this code in the future that's not me:
+        # Do not do this to a website unless you're okay with hammering
+        # it with a high number of requests.
+        print('Connection error parsing %s-%i' % (dept, term_code))
+        collect(dept, term_code)
+    except ConnectionResetError:
+        print('Connection reset error parsing %s-%i'% (dept, term_code))
+        collect(dept, term_code)
+
 
 
 class Command(BaseCommand):
     help = 'Retrieves all of the sections in the Texas A&M University system'
 
+    def add_arguments(self, parser):
+        parser.add_argument('--shallow', dest='shallow', action='store_true',
+                            help='Parses only the first 8 term codes. Used for updating current terms.')
+
     def handle(self, *args, **options):
-        term_codes = request_term_codes()[1:]
-        for term_code in term_codes[:1]:
+        term_codes = None
+        if options['shallow']:
+            term_codes = request_term_codes()[1:9]
+        else:
+            term_codes = request_term_codes()[1:]
+        for term_code in term_codes:
+            term_code = int(term_code)
             depts = request_depts(term_code)
             for dept in depts:
-                print(dept)
-                soup = request_dept_sections(term_code, dept)
-                outer_datadisplaytable = soup.select_one(
-                    'table.datadisplaytable')
-                trs = merge_trs(outer_datadisplaytable)
-                for tr in trs:
-                    print(extract_tr_data(tr))
+                collect(dept, term_code)

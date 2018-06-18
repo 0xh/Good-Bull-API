@@ -32,8 +32,7 @@ def is_valid_meeting_string(string):
 
 
 class Meeting(models.Model):
-    building = models.ForeignKey(
-        'Building', on_delete=models.CASCADE, related_name='sections_hosted_here', null=True)
+    location = models.CharField(max_length=100, null=True, blank=True)
     meeting_days = models.CharField(max_length=7, validators=[
         is_valid_meeting_string])
     start_time = models.TimeField(null=True)
@@ -55,17 +54,23 @@ class Meeting(models.Model):
                             (INDEPENDENT_STUDY, 'Independent Study'),
                             (RESEARCH, 'Research')]
     meeting_type = models.CharField(
-        choices=MEETING_TYPE_CHOICES, null=True)
+        choices=MEETING_TYPE_CHOICES, null=True, max_length=20)
 
 
 class Section(models.Model):
     _id = models.CharField(
         max_length=13, primary_key=True)
+    name = models.CharField(max_length=75)
     crn = models.IntegerField(
         verbose_name='Unique course registration number.')
+    course = models.ForeignKey(
+        'Course', on_delete=models.CASCADE, related_name='sections')
     section_num = models.CharField(max_length=5)
     term_code = models.IntegerField(
         verbose_name='The term in which this course was offered.')
     instructor = models.ForeignKey(
-        'Instructor', on_delete=models.CASCADE, related_name='sections_taught')
+        'Instructor', on_delete=models.CASCADE, related_name='sections_taught', null=True, blank=True)
     meetings = models.ManyToManyField(Meeting, related_name='meetings')
+
+    class Meta:
+        ordering = ('course', 'section_num')

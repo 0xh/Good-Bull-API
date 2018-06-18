@@ -5,7 +5,7 @@ from typing import List, Tuple, NewType
 import requests
 import bs4
 from bs4 import BeautifulSoup, Tag
-from django import db  # Used for transaction.atomic
+from django.db import transaction  # Used for transaction.atomic
 from django.contrib.postgres import search  # Used for SearchVector
 from django.core.management import base
 import goodbullapi.models as gba_models
@@ -98,7 +98,9 @@ def parse_description(courseblockdesc: bs4.BeautifulSoup) -> Tuple[str, str, str
         ' Corequisites?: (?P<coreqs>.+?(?= Prerequisites?: | Cross-Listings?: |$))')
     description_text = courseblockdesc.text
     description_text = common_functions.sanitize(description_text)
-    description = re.findall(DESCRIPTION_PATTERN, description_text)[0].strip()
+    description = re.findall(DESCRIPTION_PATTERN, description_text)
+    if description:
+        description = description[0].strip()
     prereqs = re.findall(PREREQS_PATTERN, description_text)
     if prereqs:
         prereqs = prereqs[0].strip()
@@ -133,6 +135,7 @@ def parse_courseblock(courseblock: bs4.BeautifulSoup):
 
 
 class Command(base.BaseCommand):
+
     def handle(self, *args, **options):
         education_levels = [UNDERGRADUATE, GRADUATE]
         for level in education_levels:
@@ -141,6 +144,7 @@ class Command(base.BaseCommand):
                 description_url)
             url_dept_pairs = collect_departments(course_description_html)
             for path, dept in url_dept_pairs:
+                print(dept)
                 url = BASE_URL + path
                 soup = common_functions.request_html(url)
                 courseblocks = soup.select('.courseblock')
@@ -162,6 +166,7 @@ class Command(base.BaseCommand):
                                                    min_credits=min_hours,
                                                    max_credits=max_hours,
                                                    searchable_field=searchable_field)
+                        course.full_clean(exclude=['_id', 'search_vector'])
                         course.save()
         gba_models.Course.objects.update(
             search_vector=search.SearchVector('searchable_field'))
