@@ -1,18 +1,12 @@
-from django.conf.urls import include, url
-from rest_framework.routers import DefaultRouter
+from rest_framework import routers
+from goodbullapi import views
+from django.conf.urls import url, include
 
-import goodbullapi.views
-
-router = DefaultRouter()
-router.register(r'', goodbullapi.views.BuildingViewSet)
+router = routers.DefaultRouter()
+router.register(r'buildings', views.BuildingViewSet)
 
 urlpatterns = [
-    url(r'buildings/', include(router.urls)),
-
-    url(r'courses/(?P<term_code>.+)/(?P<dept>.+)/(?P<course_num>.+)/$', goodbullapi.views.CourseRetrieve.as_view()),
-    url(r'courses/(?P<term_code>.+)/(?P<dept>.+)/$', goodbullapi.views.CourseListByDepartment.as_view()),
-
-    url(r'sections/(?P<term_code>.+)/(?P<crn>.+)/$', goodbullapi.views.SectionRetrieve.as_view()),
-    url(r'instructors/(?P<dept>.+)/(?P<course_num>.+)/$', goodbullapi.views.InstructorListByCourse.as_view()),
-    url(r'instructors/(?P<pk>.+)/$', goodbullapi.views.InstructorRetrieve.as_view())
+    url(r'^courses/(?P<dept>.+)/(?P<course_num>.+)/', views.CourseRetrieve.as_view()),
+    url(r'^courses/(?P<dept>.+)/', views.DepartmentList.as_view()),
+    url(r'^', include(router.urls))
 ]

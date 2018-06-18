@@ -1,6 +1,3 @@
 from .buildings import BuildingViewSet
-from .courses import CourseListByDepartment, CourseRetrieve
-from .sections import SectionRetrieve
-from .instructors import InstructorRetrieve, InstructorListByCourse
-__all__ = ['BuildingViewSet', 'CourseListByDepartment', 'CourseRetrieve',
-           'SectionRetrieve', 'InstructorRetrieve', 'InstructorListByCourse']
+from .courses import DepartmentList, CourseRetrieve
+__all__ = ['BuildingViewSet', 'DepartmentList', 'CourseRetrieve']

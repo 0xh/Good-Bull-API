@@ -1,21 +1,19 @@
 from django.db import models
-
-# Create your models here.
-
+from django.contrib.postgres.search import SearchVectorField
 
 class Course(models.Model):
-    _id = models.CharField(primary_key=True, max_length=16)
-    dept = models.CharField(max_length=5, db_index=True)
+    _id = models.CharField(max_length=10, primary_key=True)
+    dept = models.CharField(max_length=4)
     course_num = models.CharField(max_length=5)
-    short = models.CharField(max_length=12)
-    term_code = models.CharField(max_length=6, db_index=True)
-    name = models.CharField(max_length=125, default='', db_index=True)    
-    least_credits = models.FloatField(null=True)
-    most_credits = models.FloatField(null=True)
-    description = models.TextField(max_length=300, null=True)
-    division_of_hours = models.TextField(max_length=100, null=True)
-    prereqs = models.TextField(max_length=150, null=True)
+    name = models.CharField(max_length=100)
+    distribution_of_hours = models.CharField(max_length=60, null=True, blank=True)
+    description = models.TextField(max_length=500, null=True, blank=True)
+    prereqs = models.TextField(null=True, blank=True)
+    coreqs = models.TextField(null=True, blank=True)
+    min_credits = models.FloatField(verbose_name='Minimum number of credits this course can count for')
+    max_credits = models.FloatField(verbose_name='Maximum number of credits this course can count for')
+    searchable_field = models.CharField(max_length=110)
+    search_vector = SearchVectorField(blank=True)
 
     class Meta:
-        unique_together = ('dept', 'course_num', 'term_code')
-        ordering = ('_id',)
+        ordering = ('dept', 'course_num')

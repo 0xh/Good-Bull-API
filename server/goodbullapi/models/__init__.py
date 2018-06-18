@@ -1,5 +1,6 @@
-from .courses import Course
-from .sections import Section, Meeting
 from .buildings import Building
-from .instructors import GPADistribution, Instructor
-__all__ = ['Building', 'Course', 'Section', 'Meeting', 'GPADistribution', 'Instructor']
+from .courses import Course
+from .instructors import Instructor
+from .sections import Section, Meeting
+
+__all__ = ['Building', 'Course', 'Instructor', 'Section', 'Meeting']

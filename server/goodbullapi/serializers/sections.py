@@ -1,32 +1,23 @@
 from rest_framework import serializers
-from goodbullapi.models import Section, Meeting
-from .instructors import GPADistributionSerializer
+
+from goodbullapi.models import Instructor, Meeting, Section
+
+from .instructors import InstructorSerializer
+
 
 class MeetingSerializer(serializers.ModelSerializer):
     class Meta:
         model = Meeting
-        fields = ('meeting_type', 'start_time', 'end_time', 'days')
+        fields = ('location', 'meeting_days',
+                  'start_time', 'end_time', 'meeting_type')
 
 
 class SectionSerializer(serializers.ModelSerializer):
+    """Serializes a Section."""
     meetings = MeetingSerializer(many=True, read_only=True)
-    gpa_distribution = GPADistributionSerializer(many=False, read_only=True)
+    instructor = InstructorSerializer(read_only=True)
+
     class Meta:
         model = Section
-        fields = (
-            'crn',
-            'term_code',
-            'dept',
-            'course_num',
-            'section_num',
-            'honors',
-            'section_name',
-            'meetings',
-            'least_credits',
-            'most_credits',
-            'gpa_distribution')
-    
-    @staticmethod
-    def setup_eager_loading(queryset):
-        queryset = queryset.select_related('gpa_distribution')
-        return queryset
+        fields = ('name', 'crn', 'section_num',
+                  'term_code', 'instructor', 'meetings')
