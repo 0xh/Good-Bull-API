@@ -38,7 +38,11 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    'goodbullapi.apps.GoodbullapiConfig'
+    'graphene_django',
+    'buildings.apps.BuildingsConfig',
+    'instructors.apps.InstructorsConfig',
+    'sections.apps.SectionsConfig',
+    'courses.apps.CoursesConfig'
 ]
 
 MIDDLEWARE = [
@@ -68,6 +72,10 @@ TEMPLATES = [
         },
     },
 ]
+
+GRAPHENE = {
+    'SCHEMA': 'server.schema.schema'
+}
 
 WSGI_APPLICATION = 'server.wsgi.application'
 
