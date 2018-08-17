@@ -12,7 +12,9 @@ from django.db import transaction
 from courses import models as course_models
 from instructors import models as instructor_models
 from sections import models as section_models
+from sections.management.commands.parser import body_functions
 from shared.functions import scraper_functions
+from sections.management.commands.parser import title_functions
 
 HEADERS = {}
 
@@ -81,128 +83,6 @@ def merge_trs(outer_datadisplaytable):
     return merged
 
 
-def is_honors(name: str, section_num: str):
-    try:
-        section_num = int(section_num)
-        return (section_num >= 200 and section_num < 300) or name.startswith('HNR-')
-    except:
-        pass
-    return name.startswith('HNR-')
-
-
-def is_sptp(name: str, section_num: str):
-    """Determines if a function is a Special Topics course.
-
-    Args:
-        section_num: The section number.
-    """
-    return section_num in ['289', '489', '689'] or name.startswith('SPTP:')
-
-
-def strip_honors_prefix(name: str):
-    if 'HNR-' in name:
-        return name[4:].strip()
-    return name.strip()
-
-
-def strip_sptp_prefix(name: str):
-    if 'SPTP:' in name:
-        return name[5:].strip()
-    return name.strip()
-
-
-def parse_ddtitle(ddtitle):
-    """Extracts the abbreviated name, CRN, and section number from the ddtitle.
-
-    Args:
-        ddtitle: A bs4.BeautifulSoup instance
-    Returns:
-        name: The abbreviated name of the section (used if course doesn't exist)
-        CRN: The unique Course Registration Number that identifies this section within a term.
-        section_num: The section number that, when combined with a department and course number, uniquely identifies this section.
-    """
-    title_text = ddtitle.select_one('a').text
-    title_text = scraper_functions.sanitize(title_text)
-    split_text = title_text.split(' - ')
-    section_num = split_text[-1]
-    crn = int(split_text[-3])
-    _, course_num = split_text[-2].split(' ')
-
-    name = ' '.join(split_text[0:-3])
-    honors = sptp = False
-    if is_honors(name, section_num):
-        honors = True
-        name = strip_honors_prefix(name)
-    if is_sptp(name, section_num):
-        sptp = True
-        name = strip_sptp_prefix(name)
-
-    # TODO: Return sptp and honors status
-    return name, crn, course_num, section_num
-
-
-def parse_hours(dddefault: bs4.BeautifulSoup):
-    """Extacts the number of hours from dddefault
-
-    Args:
-        dddefault: A bs4.BeautifulSoup instance
-    Returns:
-        min_hours: The minimum number of hours that this section can be worth
-        max_hours: The maximum number of hours that this section can be worth
-    """
-    if 'Credit' not in dddefault.text:
-        return None, None
-    HOURS_PATTERN = re.compile(
-        '(?:([\d\.]+)(?:\s+TO\s+|\s+OR\s+))?([\d\.]+)\s+Credits?\n')
-    try:
-        min_hours, max_hours = re.findall(HOURS_PATTERN, dddefault.text)[0]
-        max_hours = float(max_hours)
-        if not min_hours:
-            min_hours = max_hours
-        else:
-            min_hours = float(min_hours)
-        return min_hours, max_hours
-    except Exception as e:
-        print(dddefault.text)
-        raise e
-
-
-def is_tba(string):
-    return string.strip() == "TBA"
-
-
-def parse_duration(duration_string):
-    """Parse and calculate the duration of a meeting.
-
-    Args:
-        duration_string: A string matching format %I:%M %p (see Python docs on datetime)
-    Returns:
-        A datetime.timedelta representing the duration of this meeting time, or None if TBA.
-    """
-    TIME_FORMAT_STRING = '%I:%M %p'
-    if is_tba(duration_string):
-        return None, None
-    start_string, end_string = duration_string.upper().split(' - ')
-    start_string = start_string.strip()
-    start_time = datetime.strptime(start_string, TIME_FORMAT_STRING)
-
-    end_string = end_string.strip()
-    end_time = datetime.strptime(end_string, TIME_FORMAT_STRING)
-    return start_time, end_time
-
-
-def has_primary_mark(instructor):
-    return '(P)' in instructor
-
-
-def strip_primary_mark(instructor):
-    return instructor.replace('(P)', '')
-
-
-def reduce_whitespace(string):
-    return re.sub('\s+', ' ', string)
-
-
 def retrieve_instructor(all_mentioned_instructors: List[str]):
     """Determines which of the instructors mentioned is the primary instructor.
 
@@ -215,69 +95,26 @@ def retrieve_instructor(all_mentioned_instructors: List[str]):
     for instructors_mentioned in all_mentioned_instructors:
         instructors_mentioned = instructors_mentioned.split(',')
         for instructor in instructors_mentioned:
-            if has_primary_mark(instructor):
+            if body_functions.has_primary_indicator(instructor):
                 primary_instructor_name = instructor
                 break
     if not primary_instructor_name:
         cnt = collections.Counter(all_mentioned_instructors)
         primary_instructor_name, _ = cnt.most_common(1)[0]
-    if is_tba(primary_instructor_name):
+    if body_functions.is_tba(primary_instructor_name):
         return None
+    primary_instructor_name = body_functions.strip_primary_indicator(
+        primary_instructor_name)
     primary_instructor_name = reduce_whitespace(
-        strip_primary_mark(primary_instructor_name)).strip()
+        primary_instructor_name).strip()
     instructor, _ = instructor_models.Instructor.objects.get_or_create(
         name=primary_instructor_name)
     instructor.full_clean()
     return instructor
 
 
-def parse_meetings_and_retrieve_instructor(dddefault: bs4.BeautifulSoup):
-    """Retieves all of the meetings that this class will be holding. Additionally, determines the instructor.
-
-    Args:
-        dddefault: A bs4.BeautifulSoup instance
-    Returns:
-        A list of Meeting instances, and either an Instructor instance or None
-    """
-    datadisplaytable = dddefault.select_one('.datadisplaytable')
-    if not datadisplaytable:
-        return None, None
-    # Because TAMU doesn't know what `th` elements are, throw out the first row.
-    rows = datadisplaytable.select('tr')[1:]
-
-    all_mentioned_instructors = []
-    meetings = []
-    for row in rows:
-        entries = [td.text.replace(u'\xa0', '') for td in row.select('td')]
-        meet_type, duration_string, days, location, _, _, instructor_string = entries
-        start_time, end_time = parse_duration(duration_string)
-
-        all_mentioned_instructors.append(instructor_string)
-
-        if is_tba(location):
-            location = None
-        meeting = section_models.Meeting(location=location, meeting_days=days,
-                                         start_time=start_time, end_time=end_time, meeting_type=meet_type)
-        meeting.save()
-        meetings.append(meeting)
-    instructor = retrieve_instructor(all_mentioned_instructors)
-    return meetings, instructor
-
-
-def parse_dddefault(dddefault: bs4.BeautifulSoup):
-    """Extracts the number of hours and the meetings from a dddefault element.
-
-    Args:
-        dddefault: A dddefault element that contains hours and meeting data.
-    Returns:
-        min_hours: The minimum number of hours that this section can be worth.
-        max_hours: The minimum number of hours that this section can be worth.
-        meetings: A list of Meeting instances.
-        instructor: An instructor instance (if not TBA)
-    """
-    min_hours, max_hours = parse_hours(dddefault)
-    meetings, instructor = parse_meetings_and_retrieve_instructor(dddefault)
-    return min_hours, max_hours, meetings, instructor
+def reduce_whitespace(string):
+    return re.sub(r'\s+', ' ', string)
 
 
 def extract_tr_data(tr):
@@ -296,9 +133,18 @@ def extract_tr_data(tr):
         instructor: An Instructor instance (or none if the instructor is TBA)
     """
     ddtitle = tr.select_one('.ddtitle')
-    name, crn, course_num, section_num = parse_ddtitle(ddtitle)
+    name, crn, course_num, section_num = title_functions.parse_ddtitle(ddtitle)
     dddefault = tr.select_one('.dddefault')
-    min_hours, max_hours, meetings, instructor = parse_dddefault(dddefault)
+    min_hours, max_hours, meeting_dicts, all_mentioned_instructors = body_functions.parse_dddefault(
+        dddefault)
+    meetings = []
+    if meeting_dicts is not None:
+        for meeting_dict in meeting_dicts:
+            meeting = section_models.Meeting.objects.create(**meeting_dict)
+            meetings.append(meeting)
+    instructor = None
+    if all_mentioned_instructors is not None:
+        instructor = retrieve_instructor(all_mentioned_instructors)
     return name, crn, course_num, section_num, min_hours, max_hours, meetings, instructor
 
 

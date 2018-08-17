@@ -5,7 +5,7 @@ from instructors import models as instructor_models
 from shared import schema_options as shared_schema_options
 
 
-class InstructorType(graphene_types.DjangoObjectType):
+class InstructorNode(graphene_types.DjangoObjectType):
     class Meta:
         model = instructor_models.Instructor
         filter_fields = {
@@ -15,10 +15,10 @@ class InstructorType(graphene_types.DjangoObjectType):
 
 
 class Query(object):
-    all_instructors = graphene.List(InstructorType)
-    instructor = graphene.Field(InstructorType, name=graphene.String())
+    instructors = graphene.List(InstructorNode)
+    instructor = graphene.Field(InstructorNode, name=graphene.String())
 
-    def resolve_all_instructors(self, info, **kwargs):
+    def resolve_instructors(self, info, **kwargs):
         return instructor_models.Instructor.objects.all()
 
     def resolve_instructor(self, info, **kwargs):
