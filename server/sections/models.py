@@ -2,6 +2,7 @@ from collections import Counter
 from functools import reduce
 
 from django.core.exceptions import ValidationError
+from django.contrib.postgres import fields as postgres_fields
 from django.db import models
 
 
@@ -57,6 +58,14 @@ class Meeting(models.Model):
         choices=MEETING_TYPE_CHOICES, null=True, max_length=20)
 
 
+class GradeDistribution(models.Model):
+    ABCDFQISUQX = postgres_fields.ArrayField(models.IntegerField())
+    gpa = models.FloatField(verbose_name='Overall section GPA')
+
+    def __str__(self):
+        return str(self.ABCDFQISUQX) + ' ' + self.gpa
+
+
 class Section(models.Model):
     _id = models.CharField(
         max_length=13, primary_key=True)
@@ -71,6 +80,8 @@ class Section(models.Model):
     instructor = models.ForeignKey(
         'instructors.Instructor', on_delete=models.CASCADE, related_name='sections_taught', null=True, blank=True)
     meetings = models.ManyToManyField(Meeting, related_name='meetings')
+    grade_distribution = models.OneToOneField(
+        GradeDistribution, related_name='section', null=True, blank=True, on_delete=models.deletion.CASCADE)
 
     def __str__(self):
         return str(self.course) + '-' + self.section_num + ' Term: ' + str(self.term_code)

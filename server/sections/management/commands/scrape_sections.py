@@ -12,9 +12,9 @@ from django.db import transaction
 from courses import models as course_models
 from instructors import models as instructor_models
 from sections import models as section_models
-from sections.management.commands.parser import body_functions
+from sections.management.commands.parsers.howdy_parser import (body_functions,
+                                                               title_functions)
 from shared.functions import scraper_functions
-from sections.management.commands.parser import title_functions
 
 HEADERS = {}
 
