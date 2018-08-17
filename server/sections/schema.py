@@ -6,16 +6,30 @@ from courses import models as course_models
 from sections import models as section_models
 from shared import schema_options as shared_schema_options
 
+# https://stackoverflow.com/questions/46407277/enforce-pagination-in-graphene-relay-connectionfield
 
-class MeetingType(graphene_types.DjangoObjectType):
+DEFAULT_PAGE_SIZE = 10
+MAX_PAGE_SIZE = 100
+
+
+class Meeting(graphene_types.DjangoObjectType):
+    """A time at which a Section meets."""
     meeting_type = graphene.String()
 
     class Meta:
         model = section_models.Meeting
 
 
-class SectionNode(graphene_types.DjangoObjectType):
-    meetings = graphene.List(MeetingType)
+class GradeDistribution(graphene_types.DjangoObjectType):
+    """The grades achieved by students in a certain Section."""
+    class Meta:
+        model = section_models.GradeDistribution
+
+
+class Section(graphene_types.DjangoObjectType):
+    """A specific group of students taking a Course 
+    that meet at scheduled times during the week."""
+    meetings = graphene.List(Meeting)
 
     def resolve_meetings(self, info, **kwargs):
         return self.meetings.all()
@@ -32,14 +46,14 @@ class SectionNode(graphene_types.DjangoObjectType):
 
 
 class Query(object):
-    section = graphene.Field(SectionNode,
+    section = graphene.Field(Section,
                              _id=graphene.String(),
                              crn=graphene.Int(),
                              dept=graphene.String(),
                              course_num=graphene.String(),
                              section_num=graphene.String(),
                              term_code=graphene.Int())
-    sections = gd_filter.DjangoFilterConnectionField(SectionNode)
+    sections = gd_filter.DjangoFilterConnectionField(Section)
 
     def resolve_section(self, info, **kwargs):
         # Lookup by ID

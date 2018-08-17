@@ -6,7 +6,8 @@ from courses import models as course_models
 from shared import schema_options as shared_schema_options
 
 
-class CourseNode(graphene_types.DjangoObjectType):
+class Course(graphene_types.DjangoObjectType):
+    """A representation of a course taught at Texas A&M University from term to term."""
     class Meta:
         model = course_models.Course
         filter_fields = {
@@ -23,8 +24,8 @@ class CourseNode(graphene_types.DjangoObjectType):
 
 
 class Query(object):
-    course = graphene.relay.Node.Field(CourseNode)
-    courses = gd_filter.DjangoFilterConnectionField(CourseNode)
+    course = graphene.relay.Node.Field(Course)
+    courses = gd_filter.DjangoFilterConnectionField(Course)
 
     def resolve_courses(self, info, **kwargs):
         return course_models.Course.objects.all()

@@ -74,7 +74,9 @@ TEMPLATES = [
 ]
 
 GRAPHENE = {
-    'SCHEMA': 'server.schema.schema'
+    'SCHEMA': 'server.schema.schema',
+    'RELAY_CONNECTION_ENFORCE_FIRST_OR_LAST': True,
+    'RELAY_CONNECTION_MAX_LIMIT': 100
 }
 
 WSGI_APPLICATION = 'server.wsgi.application'

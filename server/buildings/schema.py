@@ -6,7 +6,8 @@ from buildings import models as building_models
 from shared import schema_options as shared_schema_options
 
 
-class BuildingNode(graphene_types.DjangoObjectType):
+class Building(graphene_types.DjangoObjectType):
+    """A Texas A&M University-owned building."""
     class Meta:
         model = building_models.Building
         filter_fields = {
@@ -23,8 +24,8 @@ class BuildingNode(graphene_types.DjangoObjectType):
 
 
 class Query(object):
-    building = graphene.relay.Node.Field(BuildingNode)
-    buildings = gd_filter.DjangoFilterConnectionField(BuildingNode)
+    building = graphene.relay.Node.Field(Building)
+    buildings = gd_filter.DjangoFilterConnectionField(Building)
 
     def resolve_buildings(self, info, **kwargs):
         return building_models.Building.objects.all()
