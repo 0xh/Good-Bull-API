@@ -4,7 +4,7 @@ DEBUG = False
 
 SECRET_KEY = os.environ.get('SECRET_KEY')
 
-ALLOWED_HOSTS = ['*.goodbullschedules.com']
+ALLOWED_HOSTS = ['localhost', '*.goodbullschedules.com']
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
