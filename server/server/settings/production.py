@@ -23,3 +23,5 @@ SESSION_COOKIE_SECURE = True
 X_FRAME_OPTIONS = 'DENY'
 
 ADMINS = [('Gabriel', 'quontas@gmail.com')]
+
+STATIC_ROOT = '/var/www/api.goodbullschedules.com/static/'
