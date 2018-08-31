@@ -5,6 +5,7 @@ from courses import models as course_models
 # Register your models here.
 
 
-@admin.register(course_models.Course)
-class CourseAdmin(admin.ModelAdmin):
-    pass
+admin.site.register(course_models.Course)
+admin.site.register(course_models.GradeDistribution)
+admin.site.register(course_models.Meeting)
+admin.site.register(course_models.Section)

@@ -8,8 +8,7 @@ from django.core import exceptions as django_exceptions
 from django.core.management import base as mgmt_base
 
 from courses import models as course_models
-from sections import models as section_models
-from sections.management.commands.parsers import pdf_parser
+from courses.management.commands.parsers import pdf_parser
 
 PDF_URL = 'http://web-as.tamu.edu/gradereport/PDFReports/%s/grd%s%s.pdf'
 PDF_DIR = os.path.abspath('server/sections/management/commands/pdfs')
@@ -52,7 +51,7 @@ def download_pdf(url) -> str:
             raise e
 
 
-def build_grade_distribution(letter_grades: List[int], gpa: float, section: section_models.Section) -> section_models.GradeDistribution:
+def build_grade_distribution(letter_grades: List[int], gpa: float, section: course_models.Section) -> course_models.GradeDistribution:
     """Creates (or retrieves) a GradeDistribution instance.
 
     Args:
@@ -60,8 +59,8 @@ def build_grade_distribution(letter_grades: List[int], gpa: float, section: sect
         gpa: The gpa of the section
         section: The related section
     """
-    grade_distribution, _ = section_models.GradeDistribution.objects.get_or_create(
-        section=section, ABCDFQISUQX=letter_grades, gpa=gpa)
+    grade_distribution, _ = course_models.GradeDistribution.objects.get_or_create(
+        section=section, ABCDFISUQX=letter_grades, gpa=gpa)
     return grade_distribution
 
 
@@ -102,7 +101,7 @@ class Command(mgmt_base.BaseCommand):
                         try:
                             course = course_models.Course.objects.get(
                                 dept=dept, course_num=course_num)
-                            section = section_models.Section.objects.get(
+                            section = course_models.Section.objects.get(
                                 course=course, section_num=section_num, term_code=term_code)
                             grade_distribution = build_grade_distribution(
                                 letter_grades, gpa, section)

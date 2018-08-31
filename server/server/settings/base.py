@@ -11,10 +11,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    'graphene_django',
     'buildings.apps.BuildingsConfig',
     'instructors.apps.InstructorsConfig',
-    'sections.apps.SectionsConfig',
     'courses.apps.CoursesConfig'
 ]
 
@@ -55,12 +53,6 @@ TEMPLATES = [
         },
     },
 ]
-
-GRAPHENE = {
-    'SCHEMA': 'server.schema.schema',
-    'RELAY_CONNECTION_ENFORCE_FIRST_OR_LAST': True,
-    'RELAY_CONNECTION_MAX_LIMIT': 100
-}
 
 WSGI_APPLICATION = 'server.wsgi.application'
 

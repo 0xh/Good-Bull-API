@@ -16,9 +16,8 @@ Including another URLconf
 from django.conf.urls import url, include
 from django.contrib import admin
 from django.urls import path
-from graphene_django import views as graphene_views
-
+from courses import urls as course_urls
 urlpatterns = [
-    url('^graphql', graphene_views.GraphQLView.as_view(graphiql=True)),
     url('admin/', admin.site.urls),
+    path('courses/', include(course_urls))
 ]

@@ -11,8 +11,8 @@ from django.db import transaction
 
 from courses import models as course_models
 from instructors import models as instructor_models
-from sections import models as section_models
-from sections.management.commands.parsers.howdy_parser import (body_functions,
+from courses import models as course_models
+from courses.management.commands.parsers.howdy_parser import (body_functions,
                                                                title_functions)
 from shared.functions import scraper_functions
 
@@ -140,7 +140,7 @@ def extract_tr_data(tr):
     meetings = []
     if meeting_dicts is not None:
         for meeting_dict in meeting_dicts:
-            meeting = section_models.Meeting.objects.create(**meeting_dict)
+            meeting = course_models.Meeting.objects.create(**meeting_dict)
             meetings.append(meeting)
     instructor = None
     if all_mentioned_instructors is not None:
@@ -186,7 +186,7 @@ def collect(dept: str, term_code: int):
                 'instructor': instructor,
                 'course': course
             }
-            section, _ = section_models.Section.objects.update_or_create(
+            section, _ = course_models.Section.objects.update_or_create(
                 crn=crn, term_code=term_code, defaults=section_defaults)
             if meetings:
                 section.meetings.set(meetings, clear=True)
