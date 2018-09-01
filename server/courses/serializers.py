@@ -21,7 +21,7 @@ class MeetingSerializer(serializers.ModelSerializer):
 class GradeDistributionSerializer(serializers.ModelSerializer):
     class Meta:
         model = course_models.GradeDistribution
-        fields = ('ABCDFQISUQX', 'gpa')
+        fields = ('ABCDFISUQX', 'gpa')
 
 
 class SectionSerializer(serializers.ModelSerializer):

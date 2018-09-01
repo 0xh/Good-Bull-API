@@ -190,11 +190,12 @@ def collect(dept: str, term_code: int):
                 crn=crn, term_code=term_code, defaults=section_defaults)
             if meetings:
                 section.meetings.set(meetings, clear=True)
-    except requests.exceptions.ConnectionError:
+    except requests.exceptions.ConnectionError as e:
         # To anybody reading this code in the future that's not me:
         # Do not do this to a website unless you're okay with hammering
         # it with a high number of requests.
         print('Connection error parsing %s-%i' % (dept, term_code))
+        print(e)
         collect(dept, term_code)
     except ConnectionResetError:
         print('Connection reset error parsing %s-%i' % (dept, term_code))
@@ -209,11 +210,9 @@ class Command(BaseCommand):
                             help='Parses only the first 8 term codes. Used for updating current terms.')
 
     def handle(self, *args, **options):
-        term_codes = None
-        if options['shallow']:
+        term_codes = request_term_codes()[1:]
+        if 'shallow' in options:
             term_codes = request_term_codes()[1:9]
-        else:
-            term_codes = request_term_codes()[1:]
         for term_code in term_codes:
             term_code = int(term_code)
             depts = request_depts(term_code)

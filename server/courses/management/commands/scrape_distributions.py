@@ -11,7 +11,7 @@ from courses import models as course_models
 from courses.management.commands.parsers import pdf_parser
 
 PDF_URL = 'http://web-as.tamu.edu/gradereport/PDFReports/%s/grd%s%s.pdf'
-PDF_DIR = os.path.abspath('server/sections/management/commands/pdfs')
+PDF_DIR = os.path.abspath('server/courses/management/commands/pdfs')
 
 
 def get_college_abbreviations():

@@ -1,0 +1,87 @@
+<h1>Welcome to Good Bull API!</h1>
+<p>Here you can browse all kinds of course data at your leisure, using a couple of simple API routes!</p>
+<p>For the sake of consistency across the API and for the intended userbase, I've used terminology that Texas A&amp;M
+    students use. For those of you who aren't as familiar with this kind of terminology, hopefully this will help
+    clarify
+    meaning.</p>
+<ul>
+    <li><b>Course</b> - This is a group of <i>Sections</i> on a particular subject that last a whole semester.</li>
+    <li><b>Section</b> - This is what students register for and what they turn their work in to. It's a group of <i>Meetings</i>.</li>
+    <li><b>Meeting</b> - This is a specific time, day, and location that a student physically shows up to.</li>
+</ul>
+
+<div class="faqs">
+    <h2>FAQs</h2>
+    <div class="qa">
+        <h4 class="faq-question">Where and how are you getting your data?</h4>
+        <p class="faq-answer">What a great question! <i>I scraped it</i>. Every last bit of it. Every grade
+            distribution,
+            section, course, and instructor you see, I scraped and aggregated from sources scattered across the Texas
+            A&amp;M University network. All of these sources come from a <a href="tamu.edu">tamu.edu</a> domain, so I'd
+            say
+            it's straight from the horse's mouth. For Courses, I use <a href="http://catalog.tamu.edu">the course
+                catalog</a>.
+            For Sections, I use <a href="https://compass-ssb.tamu.edu/pls/PROD/bwckschd.p_disp_dyn_sched">Compass</a>,
+            which is a website written by Enterprise Information Systems, a department at Texas A&amp;M. For grade
+            distribution data, I parse <a href="http://web-as.tamu.edu/gradereport/">the registrar's report</a>. For
+            buildings, I use Texas A&amp;M's <a href="http://fcor.tamu.edu/webreporter/indexv6.asp?t=[Current_Inv_Bldgs]">Mapping
+                and Space Information</a>.</p>
+    </div>
+    <div class="qa">
+        <h4 class="faq-question">How up-to-date is your data?</h4>
+        <p class="faq-answer">Different pieces of data are automatically updated at different frequencies, depending on
+            how
+            often I picture the data changing. Here are the arbitrary frequencies I've picked, and a little explanation
+            as
+            to why I picked them:
+            <ul>
+                <li><b>Courses</b> - Courses are scraped once a week. The public-facing Course catalog is quite fast at
+                    responding, which means scraping is usually completed after five minutes or so.</li>
+                <li><b>Sections</b> - Depends on whether it's a shallow or a deep scrape.
+                    <ul>
+                        <li><b>Shallow scrape</b> - Shallow scrapes only update the eight most-recent terms, and are
+                            performed every thirty minutes.</li>
+                        <li><b>Deep scrape</b> - The last time I bothered to check, there were 268,389 different
+                            sections
+                            scraped from Spring 2009 to Fall 2018. Almost all of that information is not going to
+                            change,
+                            which is why deep scrapes only happen once.</li>
+                    </ul>
+                </li>
+                <li><b>Grade distributions</b> - Grade distributions are scraped once every two months. This is more
+                    frequently than I'd like to scrape them, as the release schedule indicated on the registrar's
+                    website
+                    says that the grade distributions are updated once per semester, but no date is given, so I can't
+                    ever
+                    be sure that new information is available.</li>
+                <li><b>Buildings</b> - Buildings are scraped once per semester. Buildings aren't really something that
+                    are
+                    constantly changing, so rescraping buildings occurs infrequently.</li>
+            </ul>
+        </p>
+    </div>
+    <div class="qa">
+        <h4 class="faq-question">Why did you build this?</h4>
+        <p class="faq-answer"><a href="https://github.com/Juliang0705/CoursePicker">I'm</a> <a href="https://github.com/jake-leland/CourseScraper">definitely</a>
+            <a href="https://github.com/xiaoyu-tamu/aggie-scraper">not</a> <a href="https://github.com/yaoyuan0553/HowdyScheduleCrawler">the</a>
+            <a href="https://github.com/taobupt/tamu">first</a> <a href="https://github.com/joshchurning/Class-Scheduler">person</a>
+            to write a course scraper, but the one thing that all of these scrapers don't have is a dependable public
+            API. The fact that there is <i>so much data</i> at Texas A&amp;M University, and the fact that none of it
+            is able to be easily consumed seems to me like an extreme oversight. I plan on using this API in my own
+            applications for statistical analysis and schedule planning, but you're more than welcome to use it.
+            There's no authentication, no rate-limiting, just free and open data. As it should be. Cheers!</p>
+    </div>
+    <div class="qa">
+        <h4 class="faq-question">Your routes aren't meeting my needs, can you make...</h4>
+        <p class="faq-answer">I have only built the routes that I considered crucial to scheduling (which was the
+            original intent of this project). If you think I've overlooked a critical piece of functionality that
+            specifically has to do with <i>data</i> (i.e. things not sourced directly from the university), you are <i>more</i>
+            than welcome to build it yourself, and submit a <a href="https://github.com/aggie-coding-club/Good-Bull-API">pull
+                request!</a> I'm very open (and actually encourage) the collection of more data, and I'd love some help
+            with this project.
+        </p>
+    </div>
+</div>
+<div class="examples">
+
+</div>
