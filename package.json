@@ -1,0 +1,29 @@
+{
+  "name": "good-bull-api",
+  "version": "3.0.0",
+  "description": "An open data API for students at Texas A&M University",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aggie-coding-club/Good-Bull-API.git"
+  },
+  "keywords": [
+    "mongoose",
+    "mongodb",
+    "nodejs",
+    "typescript",
+    "open-data"
+  ],
+  "author": "Gabriel Britain",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/aggie-coding-club/Good-Bull-API/issues"
+  },
+  "homepage": "https://github.com/aggie-coding-club/Good-Bull-API#readme",
+  "dependencies": {
+    "express": "^4.16.3"
+  }
+}
