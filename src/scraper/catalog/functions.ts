@@ -1,7 +1,6 @@
 import cheerio = require('cheerio');
 import rp = require('request-promise');
 import { CourseModel } from "../../server/models/courses/Course";
-import { ModelType } from 'typegoose';
 
 export async function getDepartmentNames(levelUrl: string): Promise<string[]> {
     try {
@@ -103,7 +102,7 @@ function scrapeBlock(courseBlock: CheerioElement) {
     return { dept, courseNum, name, minCredits, maxCredits, distributionOfHours, description, prereqs, coreqs, crosslistings, terms, scheduleName };
 }
 
-function buildBulkInsert(courseFields: any): object {
+function buildBulkReplace(courseFields: any): object {
     return {
         replaceOne: {
             filter: {
@@ -126,7 +125,7 @@ export async function scrapeCatalogPage(levelUrl: string, dept: string): Promise
         let bulkOps: object[] = []
         $('.courseblock').each(function (i, courseBlock) {
             const courseFields = scrapeBlock(courseBlock);
-            bulkOps.push(buildBulkInsert(courseFields))
+            bulkOps.push(buildBulkReplace(courseFields))
         })
         CourseModel.bulkWrite(bulkOps)
         return html;
