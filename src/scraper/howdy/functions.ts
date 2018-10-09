@@ -1,24 +1,33 @@
 import rp = require('request-promise');
 import cheerio = require('cheerio');
 import { StringCounter } from './Counter';
+import { Meeting } from '../../server/models/courses/Meeting';
+import { Section } from '../../server/models/courses/Section';
 
-export async function requestTermCodes(): Promise<number[]> {
-    const TERM_CODE_URL = 'https://compass-ssb.tamu.edu/pls/PROD/bwckschd.p_disp_dyn_sched';
-    const html = await rp(TERM_CODE_URL);
-    const $ = cheerio.load(html);
-    const options = $('select[name=p_term] > option');
-    let values: number[] = []
-    options.each((i, elem) => {
-        if (i == 0) {
-            return;
+export async function requestTermCodes(retryDepth: number = 0): Promise<TermCode[]> {
+    try {
+        const TERM_CODE_URL = 'https://compass-ssb.tamu.edu/pls/PROD/bwckschd.p_disp_dyn_sched';
+        const html = await rp(TERM_CODE_URL);
+        const $ = cheerio.load(html);
+        const options = $('select[name=p_term] > option');
+        let values: TermCode[] = []
+        options.each((i, elem) => {
+            if (i == 0) {
+                return;
+            }
+            const value = parseInt(elem.attribs['value'])
+            values.push(value)
+        })
+        return values;
+    } catch (err)   {
+        if (retryDepth < 5) {
+            return requestTermCodes(retryDepth + 1);
         }
-        const value = parseInt(elem.attribs['value'])
-        values.push(value)
-    })
-    return values;
+        return [];
+    }
 }
 
-export async function requestDepts(termCode: number, retryDepth: number = 0): Promise<string[]> {
+export async function requestDepts(termCode: TermCode, retryDepth: number = 0): Promise<string[]> {
     try {
         const DEPT_LIST_URL = 'https://compass-ssb.tamu.edu/pls/PROD/bwckgens.p_proc_term_date'
         const FORM_DATA = {
@@ -74,21 +83,18 @@ function parseTable(datadisplaytable: Cheerio): string[][] {
     return meetings;
 }
 
-function convertTime(timeString: string): Date {
+function convertTime(timeString: string): HoursSinceMidnight {
     let [hrStr, minStr, amPmStr] = timeString.trim().split(/[: ]/g)
     let hrs = parseInt(hrStr);
     let min = parseInt(minStr);
-    if (amPmStr.toLowerCase() === 'pm') {
+    if (amPmStr.toLowerCase() === 'pm' && hrs != 12) {
         hrs += 12;
     }
-    let time = new Date();
-    time.setHours(hrs);
-    time.setMinutes(min);
-    return time
+    return hrs + min / 60;
 
 }
 
-function convertTimeRange(timeRangeString: string): [Date | null, Date | null] {
+function convertTimeRange(timeRangeString: string): [HoursSinceMidnight | null, HoursSinceMidnight | null] {
     if (timeRangeString === 'TBA') {
         return [null, null]
     }
@@ -99,8 +105,8 @@ function convertTimeRange(timeRangeString: string): [Date | null, Date | null] {
     return [startTime, endTime];
 }
 
-function convertTable(table: string[][]): { type: string, startTime: Date | null, endTime: Date | null, daysStr: string, building: string }[] {
-    let converted: { type: string, startTime: Date | null, endTime: Date | null, daysStr: string, building: string }[] = []
+function convertTable(table: string[][]): MeetingFields[] {
+    let converted: MeetingFields[] = []
     for (let [type, timeRange, daysStr, where, ...rest] of table) {
         let days = null;
         if (days !== '') {
@@ -113,7 +119,7 @@ function convertTable(table: string[][]): { type: string, startTime: Date | null
     return converted;
 }
 
-function parseBlock(dddefault: Cheerio): [string | null, { type: string, startTime: Date | null, endTime: Date | null, daysStr: string, building: string }[]] {
+function parseBlock(dddefault: Cheerio): [InstructorName | null, MeetingFields[]] {
     const meetingData = parseTable(dddefault.find('.datadisplaytable'));
     let table = convertTable(meetingData);
     const instructors = meetingData.map(elem => elem[elem.length - 1])
@@ -125,7 +131,7 @@ function parseBlock(dddefault: Cheerio): [string | null, { type: string, startTi
     return [mostCommonInstructor, table];
 }
 
-function parseTitle(titleText: string): [string, string, string, string, number, boolean, boolean] {
+function parseTitle(titleText: string): SectionFields {
     const splitTitle = titleText.match(/\w+/g);
     if (!splitTitle) {
         console.error("No title.");
@@ -146,10 +152,10 @@ function parseTitle(titleText: string): [string, string, string, string, number,
         name = name.slice(1);
     }
     const nameStr = name.join(' ');
-    return [dept, courseNum, sectionNum, nameStr, crn, honors, sptp];
+    return { dept, courseNum, sectionNum, name: nameStr, crn, honors, sptp };
 }
 
-export async function scrapeDeptSections(termCode: number, dept: string) {
+export async function scrapeDeptSections(termCode: number, dept: string, retryDepth: number = 0): Promise<{ [courseNum: string]: SectionFields[] }> {
     const URL = `https://compass-ssb.tamu.edu/pls/PROD/bwckschd.p_get_crse_unsec?term_in=${termCode}&sel_subj=${dept}&sel_day=dummy&sel_schd=dummy&sel_insm=dummy&sel_camp=dummy&sel_levl=dummy&sel_sess=dummy&sel_instr=dummy&sel_ptrm=dummy&sel_attr=dummy&sel_subj=${dept}&sel_crse=&sel_title=&sel_schd=%25&sel_insm=%25&sel_from_cred=&sel_to_cred=&sel_camp=%25&sel_levl=%25&sel_ptrm=%25&sel_instr=%25&sel_attr=%25&begin_hh=0&begin_mi=0&begin_ap=a&end_hh=0&end_mi=0&end_ap=a`;
     try {
         const html = await rp(URL);
@@ -158,7 +164,7 @@ export async function scrapeDeptSections(termCode: number, dept: string) {
         let courses: { [courseNum: string]: [any] } = {};
         for (let tr of trs) {
             const titleText = $(tr).find('.ddtitle > a').text()
-            const [dept, courseNum, sectionNum, name, crn, honors, sptp] = parseTitle(titleText)
+            const { dept, courseNum, sectionNum, name, crn, honors, sptp } = parseTitle(titleText)
             const dddefault = $(tr).find('.dddefault')
             const [mostCommonInstructor, table] = parseBlock(dddefault);
             const courseFields = { dept, courseNum, sectionNum, name, crn, honors, sptp, instructor: mostCommonInstructor, meetings: table }
@@ -170,6 +176,9 @@ export async function scrapeDeptSections(termCode: number, dept: string) {
         }
         return courses;
     } catch (err) {
-        console.error(err)
+        if (retryDepth < 5) {
+            return scrapeDeptSections(termCode, dept, retryDepth + 1);
+        }
+        return {};
     }
 }

@@ -1,26 +1,48 @@
 import { requestDepts, requestTermCodes, scrapeDeptSections } from "./functions";
 import { performance } from "perf_hooks";
 
-import { SectionModel } from '../../server/models/courses/Section';
+import { SectionModel, Section } from '../../server/models/courses/Section';
 import { MeetingModel } from '../../server/models/courses/Meeting';
-import { CourseModel } from '../../server/models/courses/Course';
+import { CourseModel, Course } from '../../server/models/courses/Course';
 
-function buildBulkUpdateOps(dept, courseNum, termCode, sectionData) {
-
+type UpdateOperation = {
+    updateOne: {
+        filter: { dept: string, courseNum: string },
+        update: {
+            $set: { [key: string]: any }
+        }
+        upsert: boolean
+    }
 }
 
+function buildBulkOps(termCode: TermCode, dept: string, courseNum: string, sectionData: SectionFields[]) {
+    const fieldName = `terms.${termCode}`;
+    let updateOp: UpdateOperation = {
+        updateOne: {
+            filter: { dept, courseNum },
+            update: {
+                $set: {}
+            },
+            upsert: true
+        }
+    }
+    updateOp.updateOne.update.$set[fieldName] = sectionData;
+    return updateOp;
+}
 export async function scrapeHowdy() {
     try {
-        const termCodes = await requestTermCodes();
+        const termCodes: TermCode[] = await requestTermCodes();
         for (let termCode of termCodes) {
             console.log(`TERM: ${termCode}`)
             const depts = await requestDepts(termCode);
             for (let dept of depts) {
                 console.log(dept);
                 const sectionData = await scrapeDeptSections(termCode, dept);
-                console.log(JSON.stringify(sectionData, null, 3))
                 let bulkOps = [];
-
+                for (let courseNum in sectionData) {
+                    bulkOps.push(buildBulkOps(termCode, dept, courseNum, sectionData[courseNum]));
+                }
+                CourseModel.bulkWrite(bulkOps);
             }
         }
     } catch (err) {
