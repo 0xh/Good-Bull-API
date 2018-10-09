@@ -43,7 +43,7 @@ export async function requestDepts(termCode: TermCode, retryDepth: number = 0): 
         })
         return values
     } catch (err) {
-        console.error(err)
+        console.error(termCode, err.message, retryDepth)
         if (retryDepth < 5) {
             return requestDepts(termCode, retryDepth + 1)
         }
