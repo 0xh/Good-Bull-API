@@ -2,47 +2,62 @@ import { requestDepts, requestTermCodes, scrapeDeptSections } from "./functions"
 import { performance } from "perf_hooks";
 
 import { SectionModel, Section } from '../../server/models/courses/Section';
-import { MeetingModel } from '../../server/models/courses/Meeting';
 import { CourseModel, Course } from '../../server/models/courses/Course';
 
 type UpdateOperation = {
     updateOne: {
-        filter: { dept: string, courseNum: string },
-        update: {
-            $set: { [key: string]: any }
-        }
+        filter: object,
+        update: { [key: string]: any },
         upsert: boolean
     }
 }
 
-function buildBulkOps(termCode: TermCode, dept: string, courseNum: string, sectionData: SectionFields[]) {
-    const fieldName = `terms.${termCode}`;
-    let updateOp: UpdateOperation = {
+function buildBulkUpdateOp(filter: object, update: object, upsert: boolean): UpdateOperation {
+    return {
         updateOne: {
-            filter: { dept, courseNum },
-            update: {
-                $set: {}
-            },
-            upsert: true
+            filter, update, upsert
         }
     }
-    updateOp.updateOne.update.$set[fieldName] = sectionData;
+}
+
+function courseUpdateBulkOp(termCode: TermCode, dept: string, courseNum: string, sectionData: SectionFields[]): UpdateOperation {
+    const fieldName = `terms.${termCode}`;
+    let updateOp: UpdateOperation = buildBulkUpdateOp({ dept, courseNum }, { $set: {} }, true);
+    updateOp.updateOne.update['$set'][fieldName] = sectionData;
     return updateOp;
 }
-export async function scrapeHowdy() {
+
+function sectionUpdateBulkOp(termCode: TermCode, crn: CRN, section: SectionFields): UpdateOperation {
+    return buildBulkUpdateOp({ termCode, crn }, section, true);
+}
+
+
+export async function scrapeHowdy(fullScrape = false) {
     try {
-        const termCodes: TermCode[] = await requestTermCodes();
+        let termCodes: TermCode[] = await requestTermCodes();
+        if (fullScrape) {
+            termCodes = termCodes.slice(0, 8);
+        }
         for (let termCode of termCodes) {
             console.log(`TERM: ${termCode}`)
             const depts = await requestDepts(termCode);
             for (let dept of depts) {
                 console.log(dept);
                 const sectionData = await scrapeDeptSections(termCode, dept);
-                let bulkOps = [];
+                let courseBulkOps: UpdateOperation[] = [];
+                let sectionBulkOps: UpdateOperation[] = [];
                 for (let courseNum in sectionData) {
-                    bulkOps.push(buildBulkOps(termCode, dept, courseNum, sectionData[courseNum]));
+                    for (let section of sectionData[courseNum]) {
+                        sectionBulkOps.push(sectionUpdateBulkOp(termCode, section.crn, section));
+                    }
+                    courseBulkOps.push(courseUpdateBulkOp(termCode, dept, courseNum, sectionData[courseNum]));
                 }
-                CourseModel.bulkWrite(bulkOps);
+                if (courseBulkOps.length > 0) {
+                    CourseModel.bulkWrite(courseBulkOps);
+                }
+                if (sectionBulkOps.length > 0) {
+                    SectionModel.bulkWrite(sectionBulkOps);
+                }
             }
         }
     } catch (err) {
