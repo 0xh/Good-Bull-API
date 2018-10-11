@@ -94,12 +94,11 @@ function scrapeBlock(courseBlock: CheerioElement) {
     const [dept, courseNum, name] = scrapeTitle(courseBlock);
     const [minCredits, maxCredits, distributionOfHours] = scrapeHours(courseBlock);
     const [description, prereqs, coreqs, crosslistings] = scrapeDescription(courseBlock);
-    const terms = {}
     let scheduleName = `${dept}-${courseNum}`;
     if (name) {
         scheduleName += `: ${name}`;
     }
-    return { dept, courseNum, name, minCredits, maxCredits, distributionOfHours, description, prereqs, coreqs, crosslistings, terms, scheduleName };
+    return { dept, courseNum, name, minCredits, maxCredits, distributionOfHours, description, prereqs, coreqs, crosslistings, scheduleName };
 }
 
 function buildBulkUpdate(courseFields: any): object {
@@ -110,7 +109,10 @@ function buildBulkUpdate(courseFields: any): object {
                 courseNum: courseFields['courseNum']
             },
             update: {
-                ...courseFields
+                ...courseFields,
+                $setOnInsert: {
+                    terms: {}
+                }
             },
             upsert: true
         }
