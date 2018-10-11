@@ -1,6 +1,6 @@
 import rp = require('request-promise');
 import cheerio = require('cheerio');
-import {CourseBlock} from '../CourseBlock';
+import {CourseBlock} from './CourseBlock';
 
 function deptAbbreviation(linkText: string) {
   return linkText.split(/\W+/g)[0];

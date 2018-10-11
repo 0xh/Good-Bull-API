@@ -1,7 +1,7 @@
 import {courseModel} from '../../server/models/courses/Course';
 
 import {CourseBlock} from './CourseBlock';
-import {requestCatalogDepts, requestCourses} from './functions/requestFunctions';
+import {requestCatalogDepts, requestCourses} from './requestFunctions';
 
 const UNDERGRADUATE_URL =
     'http://catalog.tamu.edu/undergraduate/course-descriptions/';
