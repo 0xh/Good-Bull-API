@@ -102,14 +102,14 @@ function scrapeBlock(courseBlock: CheerioElement) {
     return { dept, courseNum, name, minCredits, maxCredits, distributionOfHours, description, prereqs, coreqs, crosslistings, terms, scheduleName };
 }
 
-function buildBulkReplace(courseFields: any): object {
+function buildBulkUpdate(courseFields: any): object {
     return {
-        replaceOne: {
+        updateOne: {
             filter: {
                 dept: courseFields['dept'],
                 courseNum: courseFields['courseNum']
             },
-            replacement: {
+            update: {
                 ...courseFields
             },
             upsert: true
@@ -125,7 +125,7 @@ export async function scrapeCatalogPage(levelUrl: string, dept: string): Promise
         let bulkOps: object[] = []
         $('.courseblock').each(function (i, courseBlock) {
             const courseFields = scrapeBlock(courseBlock);
-            bulkOps.push(buildBulkReplace(courseFields))
+            bulkOps.push(buildBulkUpdate(courseFields))
         })
         CourseModel.bulkWrite(bulkOps)
         return html;
