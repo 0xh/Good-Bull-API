@@ -1,6 +1,6 @@
 import mongoose = require('mongoose');
 import { Typegoose, index, prop } from 'typegoose';
-mongoose.connect('mongodb://localhost:27017/good-bull')
+mongoose.connect('mongodb://localhost:27017/good-bull');
 
 @index({ searchableName: 'text' })
 export class Building extends Typegoose {

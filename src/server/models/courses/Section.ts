@@ -1,4 +1,4 @@
-let mongoose = require("mongoose");
+const mongoose = require("mongoose");
 import { arrayProp, prop, Ref, Typegoose } from "typegoose";
 import { Meeting } from "./Meeting";
 mongoose.connect("mongodb://localhost:27017/good-bull");

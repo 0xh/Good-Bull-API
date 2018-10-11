@@ -2,7 +2,7 @@ import mongoose = require('mongoose');
 import { prop, Typegoose, staticMethod, ModelType, Ref, index } from 'typegoose';
 import { Section } from './Section';
 
-mongoose.connect('mongodb://localhost:27017/good-bull')
+mongoose.connect('mongodb://localhost:27017/good-bull');
 
 @index({ searchableName: 'text' })
 export class Course extends Typegoose {
@@ -37,7 +37,7 @@ export class Course extends Typegoose {
     get fullName(): string {
         let fullName = `${this.dept}-${this.courseNum}`;
         if (this.name) {
-            fullName += `: ${this.name}`
+            fullName += `: ${this.name}`;
         }
         return fullName;
     }
@@ -47,7 +47,7 @@ export class Course extends Typegoose {
 
     @prop()
     terms!: {
-        [termCode: string]: Ref<Section>[]
+        [termCode: string]: Array<Ref<Section>>
     };
 }
 
