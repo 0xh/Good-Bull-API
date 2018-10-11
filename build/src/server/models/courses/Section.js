@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose = require('mongoose');
 const typegoose_1 = require("typegoose");
+const Meeting_1 = require("./Meeting");
 mongoose.connect('mongodb://localhost:27017/good-bull');
 class GpaDistribution extends typegoose_1.Typegoose {
 }
@@ -23,9 +24,6 @@ __decorate([
     __metadata("design:type", Array)
 ], GpaDistribution.prototype, "ABCDFISQUX", void 0);
 class Section extends typegoose_1.Typegoose {
-    get fullName() {
-        return `${this.dept}-${this.courseNum}-${this.sectionNum}`;
-    }
 }
 __decorate([
     typegoose_1.prop(),
@@ -48,22 +46,13 @@ __decorate([
     __metadata("design:type", String)
 ], Section.prototype, "sectionNum", void 0);
 __decorate([
-    typegoose_1.prop(),
-    __metadata("design:type", String),
-    __metadata("design:paramtypes", [])
-], Section.prototype, "fullName", null);
-__decorate([
     typegoose_1.prop({ required: true, index: true }),
     __metadata("design:type", Number)
 ], Section.prototype, "termCode", void 0);
 __decorate([
-    typegoose_1.arrayProp({ items: Meeting, _id: false }),
+    typegoose_1.arrayProp({ items: Meeting_1.Meeting, _id: false }),
     __metadata("design:type", Array)
 ], Section.prototype, "meetings", void 0);
-__decorate([
-    typegoose_1.prop(),
-    __metadata("design:type", Object)
-], Section.prototype, "gpaDistribution", void 0);
 exports.Section = Section;
 const sectionModel = new Section().getModelForClass(Section);
 exports.sectionModel = sectionModel;

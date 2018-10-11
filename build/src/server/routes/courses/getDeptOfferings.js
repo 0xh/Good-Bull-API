@@ -9,12 +9,12 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const Course_1 = require("../../models/courses/Course");
-function getDeptOfferings(req, res) {
+function default_1(req, res) {
     return __awaiter(this, void 0, void 0, function* () {
         const { dept } = req.params;
-        const results = yield Course_1.courseModel.find({ dept }, { terms: false, _id: false });
+        const results = yield Course_1.CourseModel.find({ dept }, { terms: false, _id: false });
         res.json(results);
     });
 }
-exports.getDeptOfferings = getDeptOfferings;
+exports.default = default_1;
 //# sourceMappingURL=getDeptOfferings.js.map

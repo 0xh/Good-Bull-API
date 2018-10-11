@@ -62,6 +62,5 @@ Course = __decorate([
     typegoose_1.index({ searchableName: 'text' })
 ], Course);
 exports.Course = Course;
-const courseModel = new Course().getModelForClass(Course, { existingMongoose: mongoose });
-exports.courseModel = courseModel;
+exports.courseModel = new Course().getModelForClass(Course, { existingMongoose: mongoose });
 //# sourceMappingURL=Course.js.map

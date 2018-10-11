@@ -1,2 +1,2 @@
 import { Request, Response } from 'express';
-export declare function getDeptOfferings(req: Request, res: Response): Promise<void>;
+export default function (req: Request, res: Response): Promise<void>;

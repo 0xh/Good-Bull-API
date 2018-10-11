@@ -5,8 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "echo \"Building...\" && tsc",
-    "start": "npm run build && node built/server/app.js",
+    "start": "npm run compile && node build/src/server/app.js",
     "check": "gts check",
     "clean": "gts clean",
     "compile": "tsc -p .",

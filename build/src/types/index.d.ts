@@ -1,22 +1,15 @@
 declare type TermCode = number;
-declare type CRN = number;
-declare type SectionFields = {
+declare type HoursSinceMidnight = number;
+declare type CourseFields = {
     dept: string;
     courseNum: string;
-    sectionNum: string;
-    name: string;
-    crn: CRN;
-    honors: boolean;
-    sptp: boolean;
-    instructor: string | null;
-    meetings: any;
+    distributionOfHours: string | null;
+    description: string | null;
+    prereqs: string | null;
+    coreqs: string | null;
+    crossListings: string | null;
+    minCredits: number | null;
+    maxCredits: number | null;
+    name: string | null;
+    searchableName: string;
 };
-declare type InstructorName = string;
-declare type HoursSinceMidnight = number;
-declare class Meeting {
-    location: string | null;
-    meetingDays: string | null;
-    startTime: HoursSinceMidnight | null;
-    endTime: HoursSinceMidnight | null;
-    meetingType: string | null;
-}

@@ -1,9 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const express = require("express");
-const routes_1 = require("./routes");
+// import router from './routes';
 const app = express();
-app.use('/', routes_1.router);
+// app.use('/', router);
 app.listen(3000, () => {
     console.log('Listening on port 3000!');
 });
