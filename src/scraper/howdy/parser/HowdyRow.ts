@@ -1,8 +1,6 @@
 import HowdyRowTitle from "./HowdyRowTitle";
 import HowdyRowBody from "./HowdyRowBody";
-import { Meeting } from "../../../server/models/courses/Meeting";
 import cheerio = require("cheerio");
-import { Section } from "../../../server/models/courses/Section";
 
 export default class HowdyRow {
   private title: HowdyRowTitle;

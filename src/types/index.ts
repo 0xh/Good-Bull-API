@@ -1,5 +1,6 @@
 type TermCode = number;
 type CRN = number;
+
 type SectionFields = {
   dept: string;
   courseNum: string;

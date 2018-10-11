@@ -3,7 +3,7 @@ import { StringCounter } from "../Counter";
 import cheerio = require("cheerio");
 
 type RowBodyFields = {
-  instructor: string,
+  instructor: string | null,
   meetings: Meeting[]
 }
 
@@ -38,7 +38,7 @@ function convertTimeRange(
 }
 
 export default class HowdyRowBody {
-  private instructor: string;
+  private instructor: string | null;
   private meetings: Meeting[];
 
   constructor(dddefault: Cheerio) {
