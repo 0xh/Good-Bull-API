@@ -21,6 +21,8 @@ type CourseFields = {
 
 type SectionFields = {
   courseNum: string; name: string; crn: number; sectionNum: string;
+  honors: boolean;
+  sptp: boolean;
   meetings: Meeting[];
   instructor: string | null;
 };

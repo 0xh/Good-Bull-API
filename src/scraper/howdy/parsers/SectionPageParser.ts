@@ -1,12 +1,6 @@
 import cheerio = require('cheerio');
 import {HowdyRow} from './HowdyRow';
 
-type SectionFields = {
-  courseNum: string; name: string; crn: number; sectionNum: string;
-  meetings: Meeting[];
-  instructor: string | null;
-};
-
 export class SectionPageParser implements IterableIterator<HowdyRow> {
   private i = 0;
   private rows: HowdyRow[];
