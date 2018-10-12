@@ -58,4 +58,4 @@ async function scrape(): Promise<void> {
 scrape().then(() => {
   console.log('Finished scraping courses.');
   process.exit();
-})
+});

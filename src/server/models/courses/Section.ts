@@ -1,7 +1,6 @@
 const mongoose = require('mongoose');
 import {arrayProp, prop, Ref, Typegoose} from 'typegoose';
 import {Document, Model} from 'mongoose';
-import {Meeting} from './Meeting';
 mongoose.connect('mongodb://localhost:27017/good-bull');
 
 class GpaDistribution extends Typegoose {
@@ -23,7 +22,7 @@ class Section extends Typegoose {
 
   @prop({required: true, index: true}) termCode!: number;
 
-  @arrayProp({items: Meeting, _id: false}) meetings!: Meeting[];
+  @prop() meetings!: Meeting[];
 }
 
 const sectionModel: Model<Document> = new Section().getModelForClass(Section);
