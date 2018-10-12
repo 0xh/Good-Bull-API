@@ -10,7 +10,7 @@ type UpdateOperation = {
 
 type CourseUpdateOperation = {
   updateOne: {
-    filter: { dept: string; termCode: number };
+    filter: { dept: string; courseNum: string; };
     update: { $set: { [key: string]: SectionFields[]; }; };
     upsert: boolean;
   };
@@ -26,9 +26,10 @@ function courseUpdateBulkOp(
   sectionData: SectionFields[]): CourseUpdateOperation {
   const fieldName = `terms.${termCode}`;
   const updateOp: CourseUpdateOperation = {
-    updateOne: { filter: { dept, termCode }, update: { $set: {} }, upsert: true },
+    updateOne: { filter: { dept, courseNum }, update: { $set: {} }, upsert: true },
   };
   updateOp.updateOne.update.$set[fieldName] = sectionData;
+  console.log(JSON.stringify(updateOp, null, 3));
   return updateOp;
 }
 
@@ -73,10 +74,10 @@ async function scrape(shallow = false) {
           courseUpdateBulkOp(termCode, dept, courseNum, courses[courseNum]));
       }
       if (courseBulkOps.length > 0) {
-        courseModel.bulkWrite(courseBulkOps);
+        await courseModel.bulkWrite(courseBulkOps);
       }
       if (sectionBulkOps.length > 0) {
-        sectionModel.bulkWrite(sectionBulkOps);
+        await sectionModel.bulkWrite(sectionBulkOps);
       }
     }
   }
