@@ -33,16 +33,9 @@ export class SectionPageParser implements IterableIterator<HowdyRow> {
     return this;
   }
 
-
-  get courses(): {[courseNum: string]: SectionFields[]} {
-    const courses: {[courseNum: string]: SectionFields[]} = {};
-    for (const row of this) {
-      if (!(row.fields.courseNum in courses)) {
-        courses[row.fields.courseNum] = [row.fields];
-      } else {
-        courses[row.fields.courseNum].push(row.fields);
-      }
-    }
-    return courses;
+  
+  get sections() : SectionFields[] {
+    return this.rows.map(value => value.fields);
   }
+  
 }

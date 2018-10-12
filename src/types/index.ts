@@ -1,12 +1,6 @@
 type TermCode = number;
 type HoursSinceMidnight = number;
 
-type Meeting = {
-  location: string|null; meetingDays: string | null; startTime: number | null;
-  endTime: number | null;
-  meetingType: string | null;
-};
-
 type CourseFields = {
   dept: string; courseNum: string; distributionOfHours: string | null;
   description: string | null;
@@ -19,10 +13,18 @@ type CourseFields = {
   searchableName: string;
 };
 
+type MeetingFields = {
+  location: string|null; 
+  meetingDays: string | null; 
+  startTime: number | null;
+  endTime: number | null;
+  meetingType: string | null;
+};
+
 type SectionFields = {
   courseNum: string; name: string; crn: number; sectionNum: string;
   honors: boolean;
   sptp: boolean;
-  meetings: Meeting[];
+  meetings: MeetingFields[];
   instructor: string | null;
 };

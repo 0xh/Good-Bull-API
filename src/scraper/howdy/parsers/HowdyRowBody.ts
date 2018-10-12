@@ -3,7 +3,7 @@ import cheerio = require('cheerio');
 
 type RowBodyFields = {
   instructor: string|null,
-  meetings: Meeting[]
+  meetings: MeetingFields[]
 };
 
 function isTBA(str: string) {
@@ -58,8 +58,8 @@ export class HowdyRowBody {
     return rows;
   }
 
-  private convertTable(table: string[][]): Meeting[] {
-    const converted: Meeting[] = [];
+  private convertTable(table: string[][]): MeetingFields[] {
+    const converted: MeetingFields[] = [];
     for (const [type, timeRange, daysStr, locationStr, ..._] of table) {
       let days = null;
       if (daysStr !== '') {
@@ -78,7 +78,7 @@ export class HowdyRowBody {
     return converted;
   }
 
-  private parseBlock(): {instructor: string|null, meetings: Meeting[]} {
+  private parseBlock(): {instructor: string|null, meetings: MeetingFields[]} {
     const meetingData =
         this.parseTable(this.dddefault.find('.datadisplaytable'));
     const table = this.convertTable(meetingData);
@@ -88,7 +88,6 @@ export class HowdyRowBody {
     }
     const counter: StringCounter = new StringCounter(instructors);
     const [[mostCommonInstructor, _]] = counter.mostCommon(1);
-
     return {instructor: mostCommonInstructor, meetings: table};
   }
 

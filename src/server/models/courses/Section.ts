@@ -9,6 +9,14 @@ class GpaDistribution extends Typegoose {
   @prop() ABCDFISQUX!: number[];
 }
 
+class Meeting {
+  location!: string|null; 
+  meetingDays!: string | null; 
+  startTime!: number | null;
+  endTime!: number | null;
+  meetingType!: string | null;
+}
+
 class Section extends Typegoose {
   @prop() dept!: string;
 
@@ -22,7 +30,7 @@ class Section extends Typegoose {
 
   @prop({required: true, index: true}) termCode!: number;
 
-  @prop() meetings!: Meeting[];
+  @arrayProp({items: Meeting, _id: false}) meetings!: Meeting[];
 }
 
 const sectionModel: Model<Document> = new Section().getModelForClass(Section);
