@@ -29,7 +29,6 @@ function courseUpdateBulkOp(
     updateOne: { filter: { dept, courseNum }, update: { $set: {} }, upsert: true },
   };
   updateOp.updateOne.update.$set[fieldName] = sectionData;
-  console.log(JSON.stringify(updateOp, null, 3));
   return updateOp;
 }
 
