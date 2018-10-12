@@ -3,13 +3,13 @@ import {arrayProp, prop, Ref, Typegoose} from 'typegoose';
 import {Document, Model} from 'mongoose';
 mongoose.connect('mongodb://localhost:27017/good-bull');
 
-class GpaDistribution extends Typegoose {
+export class GpaDistribution extends Typegoose {
   @prop() gpa!: number;
 
   @prop() ABCDFISQUX!: number[];
 }
 
-class Meeting {
+export class Meeting {
   location!: string|null; 
   meetingDays!: string | null; 
   startTime!: number | null;

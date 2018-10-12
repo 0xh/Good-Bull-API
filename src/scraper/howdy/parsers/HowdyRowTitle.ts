@@ -3,11 +3,6 @@ const SPECIAL_TOPICS_ABBR = 'SPTP';
 
 const SPECIAL_TOPICS_COURSE_NUMS = new Set(['289', '489', '689']);
 
-type RowTitleFields = {
-  courseNum: string; sectionNum: string; name: string; crn: number;
-  honors: boolean;
-  sptp: boolean;
-};
 function isBetween(x: number, lowerBound: number, upperBound: number) {
   return x >= lowerBound && x < upperBound;
 }

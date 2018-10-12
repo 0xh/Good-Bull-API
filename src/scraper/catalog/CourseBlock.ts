@@ -1,11 +1,6 @@
 import cheerio = require('cheerio');
 import {Course} from '../../server/models/courses/Course';
 
-type DescriptionFields = {
-  description: string|null; prereqs: string | null; coreqs: string | null;
-  crossListings: string | null;
-};
-
 export class CourseBlock {
   courseBlock: Cheerio;
 

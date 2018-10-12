@@ -1,11 +1,6 @@
 import {StringCounter} from './Counter';
 import cheerio = require('cheerio');
 
-type RowBodyFields = {
-  instructor: string|null,
-  meetings: MeetingFields[]
-};
-
 function isTBA(str: string) {
   return str.trim() === 'TBA';
 }

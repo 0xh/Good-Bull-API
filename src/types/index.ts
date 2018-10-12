@@ -28,3 +28,19 @@ type SectionFields = {
   meetings: MeetingFields[];
   instructor: string | null;
 };
+
+type RowBodyFields = {
+  instructor: string|null,
+  meetings: MeetingFields[]
+};
+
+type RowTitleFields = {
+  courseNum: string; sectionNum: string; name: string; crn: number;
+  honors: boolean;
+  sptp: boolean;
+};
+
+type DescriptionFields = {
+  description: string|null; prereqs: string | null; coreqs: string | null;
+  crossListings: string | null;
+};
