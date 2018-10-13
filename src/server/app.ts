@@ -1,5 +1,5 @@
 import express = require('express');
-import { IndexRouter } from './routes';
+import {IndexRouter} from './routes';
 const app = express();
 
 app.use('/', new IndexRouter().routes);

@@ -14,9 +14,7 @@ type CourseFields = {
 };
 
 type MeetingFields = {
-  location: string|null; 
-  meetingDays: string | null; 
-  startTime: number | null;
+  location: string|null; meetingDays: string | null; startTime: number | null;
   endTime: number | null;
   meetingType: string | null;
 };

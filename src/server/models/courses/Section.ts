@@ -10,11 +10,11 @@ export class GpaDistribution extends Typegoose {
 }
 
 export class Meeting {
-  location!: string|null; 
-  meetingDays!: string | null; 
-  startTime!: number | null;
-  endTime!: number | null;
-  meetingType!: string | null;
+  location!: string|null;
+  meetingDays!: string|null;
+  startTime!: number|null;
+  endTime!: number|null;
+  meetingType!: string|null;
 }
 
 class Section extends Typegoose {

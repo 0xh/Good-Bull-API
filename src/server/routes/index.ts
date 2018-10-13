@@ -1,15 +1,16 @@
-import { CourseRouter } from './courses';
-import { Router } from 'express';
+import {Router} from 'express';
+
+import {CourseRouter} from './courses';
 
 export class IndexRouter {
-    routes: Router;
+  routes: Router;
 
-    constructor()   {
-        this.routes = Router({mergeParams: true});
-        this.init();
-    }
+  constructor() {
+    this.routes = Router({mergeParams: true});
+    this.init();
+  }
 
-    init()  {
-        this.routes.use('/courses/:dept', new CourseRouter().routes);
-    }
+  init() {
+    this.routes.use('/courses/:dept', new CourseRouter().routes);
+  }
 }

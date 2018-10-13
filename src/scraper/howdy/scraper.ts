@@ -32,9 +32,9 @@ function courseUpdateBulkOp(
   return updateOp;
 }
 
-function sectionUpdateBulkOp(
+function sectionUpdateBulkOp(dept: string, courseNum: string,
   termCode: TermCode, crn: number, section: SectionFields): UpdateOperation {
-  return buildBulkUpdateOp({ termCode, crn }, section, true);
+  return buildBulkUpdateOp({ dept, courseNum, termCode, crn }, section, true);
 }
 
 function assembleCourses(sectionData: SectionFields[]): { [courseNum: string]: SectionFields[] } {
@@ -67,7 +67,7 @@ async function scrape(shallow = false) {
       for (const courseNum of Object.keys(courses)) {
         for (const section of courses[courseNum]) {
           sectionBulkOps.push(
-            sectionUpdateBulkOp(termCode, section.crn, section));
+            sectionUpdateBulkOp(dept, courseNum, termCode, section.crn, section));
         }
         courseBulkOps.push(
           courseUpdateBulkOp(termCode, dept, courseNum, courses[courseNum]));

@@ -33,9 +33,8 @@ export class SectionPageParser implements IterableIterator<HowdyRow> {
     return this;
   }
 
-  
-  get sections() : SectionFields[] {
+
+  get sections(): SectionFields[] {
     return this.rows.map(value => value.fields);
   }
-  
 }
