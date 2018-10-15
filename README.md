@@ -13,7 +13,7 @@ Future data to scrape includes:
 - [ ] Grade data from [the registrar](http://web-as.tamu.edu/gradereport/).
 
 # Background
-This section very little pertinence to the tech stack or project implementation, but describes my motivations for this project.
+This section has very little pertinence to the tech stack or project implementation, but describes my motivations for this project.
 
 ## Why Build This?
 Texas A&M provides no way of programmatically retrieving historical (or present) course data to students. Students who _want_ to use that data are required to write a webscraper that is, in itself, a Herculean task, depending on how much information you want to retrieve.
