@@ -1,9 +1,10 @@
 import mongoose = require('mongoose');
 import {Typegoose, index, prop} from 'typegoose';
+import {Model, Document} from 'mongoose';
 mongoose.connect('mongodb://localhost:27017/good-bull');
 
 @index({searchableName: 'text'})
-export class Building extends Typegoose {
+class Building extends Typegoose {
   @prop({required: true}) abbreviation!: string;
 
   @prop() address!: string;
@@ -12,11 +13,16 @@ export class Building extends Typegoose {
 
   @prop() zip!: string;
 
-  @prop() yearBuilt!: number;
+  @prop() yearBuilt!: number|null;
 
-  @prop() numFloors!: number;
+  @prop() numFloors!: number|null;
 
   @prop({required: true}) name!: string;
 
   @prop({required: true}) searchableName!: string;
 }
+
+const buildingModel: Model<Document> =
+    new Building().getModelForClass(Building);
+
+export {Building, buildingModel};

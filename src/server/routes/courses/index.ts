@@ -2,7 +2,7 @@ import express = require('express');
 import {getCourse} from './getCourse';
 import {getDeptOfferings} from './getDeptOfferings';
 import {Router} from 'express';
-import { getSection } from './getSection';
+import {getSection} from './getSection';
 
 export class CourseRouter {
   routes: Router;
