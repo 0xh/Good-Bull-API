@@ -1,5 +1,5 @@
 import request = require('request');
-import Papa = require('papaparse');
+import {parse} from 'papaparse';
 const CSV_URL =
   'http://fcor.tamu.edu/webreporter/exportv6.asp?fm=2&t=[Current_Inv_Bldgs]&strSQL=Select%20[BldgAbbr],%20[BldgName],%20[YearBuilt],%20[NumFloors],%20[Address],%20[City],%20[Zip]%20From%20[Current_Inv_Bldgs]%20Where%20BldgAbbr%20Like%20~^~';
 
@@ -26,7 +26,7 @@ export function downloadCSV() {
   const updateOps: UpdateOperation[] = [];
   request.get(CSV_URL, (err, response, body) => {
     if (!err && response.statusCode === 200) {
-      const parseResult = Papa.parse(body);
+      const parseResult = parse(body);
       for (const row of parseResult.data) {
         if (row.length !== 8) {
           continue;

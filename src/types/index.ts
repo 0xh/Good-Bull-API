@@ -14,7 +14,7 @@ type CourseFields = {
 };
 
 type MeetingFields = {
-  location: string|null; meetingDays: string | null; startTime: number | null;
+  location: Document | string | null; meetingDays: string | null; startTime: number | null;
   endTime: number | null;
   meetingType: string | null;
 };
@@ -28,7 +28,7 @@ type SectionFields = {
 };
 
 type RowBodyFields = {
-  instructor: string|null,
+  instructor: string | null,
   meetings: MeetingFields[]
 };
 
@@ -39,6 +39,6 @@ type RowTitleFields = {
 };
 
 type DescriptionFields = {
-  description: string|null; prereqs: string | null; coreqs: string | null;
+  description: string | null; prereqs: string | null; coreqs: string | null;
   crossListings: string | null;
 };
