@@ -9,7 +9,7 @@ Currently, the following data is scraped and served:
 - [X] Sections from [Compass](https://compass-ssb.tamu.edu/pls/PROD/bwckschd.p_disp_dyn_sched)
 
 Future data to scrape includes:
-- [ ] Building data from [fcor.tamu.edu](http://fcor.tamu.edu/webreporter/indexv6.asp?t=[Current_Inv_Bldgs]).
+- [X] Building data from [fcor.tamu.edu](http://fcor.tamu.edu/webreporter/indexv6.asp?t=[Current_Inv_Bldgs]).
 - [ ] Grade data from [the registrar](http://web-as.tamu.edu/gradereport/).
 
 # Background
