@@ -1,4 +1,5 @@
 type TermCode = number;
+type CollegeAbbrev = string;
 type HoursSinceMidnight = number;
 
 type CourseFields = {
