@@ -1,9 +1,25 @@
 import cheerio = require('cheerio');
-import {get_college_abbrevs} from './requestFunctions';
+import {downloadPDF, getCollegeAbbrevs, parsePDF} from './requestFunctions';
+
+function* termCodeMaker(startYear: number, startSemester: number, endYear: number, endSemester: number){
+    while(startYear < endYear || (startYear <= endYear && startSemester <= endSemester)){
+        yield parseInt(`${startYear}${startSemester++}`);
+        if (startSemester == 4){
+            startSemester = 1;
+            startYear++;
+        }
+    }
+}
 
 async function scrape(): Promise<void> {
     try{
-        const abbrevs = await get_college_abbrevs();
+        const abbrevs = await getCollegeAbbrevs();
+        for (const termCode of termCodeMaker(2015, 1, 2018, 1)){
+            for (const abbrev of abbrevs){
+                await downloadPDF(termCode, abbrev);
+                await parsePDF(termCode, abbrev);
+            }
+        }
     }
     catch (err) {
         console.log("Error scraping grade distributions");

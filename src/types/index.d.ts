@@ -29,6 +29,20 @@ type SectionFields = {
   instructor: string | null;
 };
 
+type GradeDistributionFields = {
+  A: number,
+  B: number,
+  C: number,
+  D: number,
+  F: number,
+  GPA: number,
+  I: number,
+  S: number,
+  U: number,
+  Q: number,
+  X: number
+}
+
 type RowBodyFields = {
   instructor: string|null,
   meetings: MeetingFields[]
