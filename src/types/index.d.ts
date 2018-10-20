@@ -30,17 +30,8 @@ type SectionFields = {
 };
 
 type GradeDistributionFields = {
-  A: number,
-  B: number,
-  C: number,
-  D: number,
-  F: number,
+  grades: number[],
   GPA: number,
-  I: number,
-  S: number,
-  U: number,
-  Q: number,
-  X: number
 }
 
 type RowBodyFields = {

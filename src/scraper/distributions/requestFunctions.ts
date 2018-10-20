@@ -1,7 +1,7 @@
 import cheerio = require('cheerio');
 import rp = require('request-promise');
 import fs = require('fs');
-const extract = require('pdf-text-extract');
+const pdfjs = require('pdfjs-dist');
 import {sectionModel} from '../../server/models/courses/Section';
 
 type UpdateOperation = {
@@ -22,7 +22,8 @@ type UpdateOperation = {
 }
 
 function constructPDFURL(termCode: TermCode, collegeAbbrev: CollegeAbbrev): string {
-    return `http://web-as.tamu.edu/gradereport/PDFReports/${termCode}/grd${termCode}${collegeAbbrev}.pdf`
+    //return `http://web-as.tamu.edu/gradereport/PDFReports/${termCode}/grd${termCode}${collegeAbbrev}.pdf`
+    return "http://web-as.tamu.edu/gradereport/PDFReports/20171/grd20171DN.pdf";
 }
 
 export async function getCollegeAbbrevs(): Promise<string[]>{
@@ -47,93 +48,97 @@ export async function downloadPDF(termCode: TermCode, collegeAbbrev: CollegeAbbr
     try{
         const PDF_DIR = `./build/src/scraper/distributions/pdf/${termCode}${collegeAbbrev}.pdf`;
         const URL = constructPDFURL(termCode, collegeAbbrev);
-        const options = {
-            method: "GET",
-            encoding: "binary",
-            headers: {
-                "Content-type": "applcation/pdf"
-            }
+        console.log(URL);
+        let updateOps: UpdateOperation[] = [];
+        const pdf = await pdfjs.getDocument(URL);
+        const maxPages = pdf.pdfInfo.numPages;
+        for (let i = 1; i < maxPages+1; i++){
+            let page = await pdf.getPage(i);
+            let txt = await page.getTextContent();
+            const parsedText = txt.items.map((s:any) => { return s.str; }).join('');
+            const newOps = parsePDF(termCode, parsedText);
+            updateOps = [...updateOps, ...newOps];
         }
-        const body = await rp(URL, options);
-        let writeStream = fs.createWriteStream(PDF_DIR);
-        writeStream.write(body, 'binary');
-        writeStream.end(); 
+        sectionModel.bulkWrite(updateOps).then(() => {
+            console.log("Finished writing to MongoDB");
+        }).catch((err: Error) => {
+            console.error(err);
+        });
     }
     catch (err){
+        console.log(err);
         console.error("Unable to load the resource at the URL")
     }
 }
 
-export async function parsePDF(termCode: TermCode, collegeAbbrev: CollegeAbbrev): Promise<void> {
+function parsePDF(termCode: TermCode, text: string): UpdateOperation[] {
     try{
         let updateOps: UpdateOperation[] = [];
-        const PDF_DIR = `./build/src/scraper/distributions/pdf/${termCode}${collegeAbbrev}.pdf`;
-        extract(PDF_DIR, function (err: any, pages: any) {
-            if (err) return;
-            let re = /[' ']|[\n]|[-]{2,}/; //Searches for anything wth a space, newline, or more than 1 dash
-            for (let page of pages){
-                let parsed = page.split(re).filter((val: string) => val);
-                for (let i = 0; i < parsed.length; i++){
-                    let part = parsed[i];
-                    if (part.match(/[A-Za-z]{4}-[0-9]{3}-[0-9]{3}/)){ //Searches specifically for lines with courses on them
-                        const courseInfo = part.split("-");
-                        const dept = courseInfo[0];
-                        const courseNum = courseInfo[1];
-                        const sectionNum = courseInfo[2];
-                        const numA = parsed[++i];
-                        const numB = parsed[++i];
-                        const numC = parsed[++i];
-                        const numD = parsed[++i];
-                        const numF = parsed[++i];
+        let re = /[' ']|[\n]|[-]{2,}/; //Searches for anything wth a space, newline, or more than 1 dash
+        let parsed = text.split(re).filter((val: string) => val);
+        for (let i = 0; i < parsed.length; i++){
+            let part: string = parsed[i];
+            console.log(part);
+            if (part.match(/[A-Z]{4}-[A-Z0-9]{3,4}-[0-9]{3}/)){ //Searches specifically for lines with courses on them
+                const courseInfo: RegExpMatchArray | null = part.match(/[A-Za-z]{4}-[0-9]{3,4}-[0-9]{3}/);
+                const gpaMatch: RegExpMatchArray | null = part.match(/[0-9]{1}[.][0-9]{3}/);
+                let dept: string;
+                let courseNum: string;
+                let sectionNum: string;
+                let GPA: number = 0;
+                let grades: number[] = [];
+                if (courseInfo){
+                    const courseInfoData: string[] = courseInfo[0].split("-");
+                    dept = courseInfoData[0];
+                    courseNum = courseInfoData[1];
+                    sectionNum = courseInfoData[2];
+                    const tamuTermCode: number = Number(String(termCode) + "1");
+
+                    if (gpaMatch){
+                        GPA = parseFloat(gpaMatch[0]);
+
                         ++i;
-                        const GPA = parsed[++i];
-                        const numI = parsed[++i];
-                        const numS = parsed[++i];
-                        const numU = parsed[++i];
-                        const numQ = parsed[++i];
-                        const numX = parsed[++i];
-                        const gradeDistribution = {
-                            A: numA,
-                            B: numB,
-                            C: numC,
-                            D: numD,
-                            F: numF,
-                            GPA: GPA,
-                            I: numI,
-                            S: numS,
-                            U: numU,
-                            Q: numQ,
-                            X: numX
-                        };
-                        const tamuTermCode = parseInt(termCode.toString() + "1");
-                        updateOps.push({
-                            updateOne: {
-                                filter: {$and: 
-                                    [
-                                        {dept: dept}, 
-                                        {sectionNum: sectionNum}, 
-                                        {courseNum: courseNum}, 
-                                        {termCode: tamuTermCode}
-                                    ] 
-                                },
-                                update: {$set: {
-                                    gradeDistribution: gradeDistribution
-                                }},
-                                upsert: false
-                            }
-                        });
+                        for (let j = 0; j < 5; j++) grades.push(Number(parsed[++i]));
+                        ++i;
+                        for (let j = 0; j < 5; j++) grades.push(Number(parsed[++i]));
                     }
+                    else{
+                        for (let j = 0; j < 5; j++){
+                            grades.push(Number(parsed[++i]));
+                            ++i;
+                        }
+                        const gpaMatch: RegExpMatchArray | null = parsed[++i].match(/[0-9]{1}[.][0-9]{3}/);
+                        if (gpaMatch) GPA = Number(gpaMatch[0]);
+                        for (let j = 0; j < 5; j++){
+                            grades.push(Number(parsed[++i]));
+                        }
+                    }
+                    updateOps.push({
+                        updateOne: {
+                            filter: {$and: 
+                                [
+                                    {dept: dept}, 
+                                    {sectionNum: sectionNum},
+                                    {courseNum: courseNum}, 
+                                    {termCode: tamuTermCode}
+                                ] 
+                            },
+                            update: {$set: {
+                                gradeDistribution:{
+                                    grades: grades,
+                                    GPA: GPA
+                                }
+                            }},
+                            upsert: false
+                        }
+                    });
                 }
             }
-            if (updateOps.length > 0)
-                sectionModel.bulkWrite(updateOps).then(() => {
-                    console.log("Finished writing to Mongo");
-                }).catch((err: Error) => {
-                    console.error(err);
-                });
-        })
+        }
+        return updateOps;
     }
     catch (err){
-        console.error("Unable to open the file at the given directory");
+        console.log(err);
+        return [];
     }
 }

@@ -37,6 +37,7 @@
     "pdf-parse": "^1.0.8",
     "pdf-text-extract": "^1.5.0",
     "pdf2json": "^1.1.7",
+    "pdfjs-dist": "^2.0.489",
     "pdfreader": "^0.2.5",
     "reflect-metadata": "^0.1.12",
     "request": "^2.88.0",
