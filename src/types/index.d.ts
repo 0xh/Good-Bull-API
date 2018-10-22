@@ -1,4 +1,5 @@
 type TermCode = number;
+type CollegeAbbrev = string;
 type HoursSinceMidnight = number;
 
 type CourseFields = {
@@ -27,6 +28,11 @@ type SectionFields = {
   meetings: MeetingFields[];
   instructor: string | null;
 };
+
+type GradeDistributionFields = {
+  grades: number[],
+  GPA: number,
+}
 
 type RowBodyFields = {
   instructor: string|null,
