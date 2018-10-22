@@ -24,7 +24,6 @@ type SectionUpdateOperation = {
 
 function constructPDFURL(termCode: TermCode, collegeAbbrev: CollegeAbbrev): string {
     return `http://web-as.tamu.edu/gradereport/PDFReports/${termCode}/grd${termCode}${collegeAbbrev}.pdf`
-    //return "http://web-as.tamu.edu/gradereport/PDFReports/20181/grd20181DN_PROF.pdf";
 }
 
 export async function getCollegeAbbrevs(): Promise<string[]>{
@@ -49,7 +48,6 @@ export async function downloadPDF(termCode: TermCode, collegeAbbrev: CollegeAbbr
     try{
         const PDF_DIR = `./build/src/scraper/distributions/pdf/${termCode}${collegeAbbrev}.pdf`;
         const URL = constructPDFURL(termCode, collegeAbbrev);
-        console.log(URL);
         let sectionUpdateOps: SectionUpdateOperation[] = [];
         let coureseUpdateOps: Object[] = [];
 
@@ -72,11 +70,10 @@ export async function downloadPDF(termCode: TermCode, collegeAbbrev: CollegeAbbr
         courseModel.bulkWrite(coureseUpdateOps).then(() => {
             console.log("Finished writing the course distributions to MongoDB");
         }).catch((err: Error) => {
-            console.error(err);
+            console.error("There were no operations specified for this document");
         })
     }
     catch (err){
-        console.log(err);
         console.error("Unable to load the resource at the URL")
     }
 }
@@ -98,7 +95,7 @@ async function parsePDF(termCode: TermCode, text: string): Promise<{newSectionUp
             let grades: number[] = [];
             const tamuTermCode: number = Number(String(termCode) + "1");
 
-            if (part.match(/[A-Z]{4}-[A-Z0-9]{3}-[0-9]{3}/)){ //Searches specifically for lines with courses on them            
+            if (part.match(/[A-Z]{4}-[A-Z0-9]{3,4}-[0-9]{3}/)){ //Searches specifically for lines with courses on them            
                 if (courseInfo){
                     const courseInfoData: string[] = courseInfo[0].split("-");
                     dept = courseInfoData[0];

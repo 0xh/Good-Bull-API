@@ -19,7 +19,6 @@ async function scrape(): Promise<void> {
                 await downloadPDF(termCode, abbrev);
             }
         }
-        //await downloadPDF(1, "");
     }
     catch (err) {
         console.log("Error scraping grade distributions");
