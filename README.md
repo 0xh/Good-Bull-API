@@ -51,17 +51,3 @@ I stream a CSV that includes the fields I'm looking for, and parse the CSV into 
 
 ### Grades
 In progress...
-
-# Contributing
-I'm excited that you want to contribute to this project! After all, this API is for everybody! 
-
-## New Features
-If you have a new feature you'd like to see happen, open a [feature request issue](https://github.com/SaltyQuetzals/Good-Bull-API/issues/new?template=feature_request.md). These issues let me know what you hope to see added, and why you think it's important.
-
-__PLEASE NOTE__: This API is intended to be a data source and __READ ONLY__. The only way that data should be changing is if the output of the scrapers changes.
-
-## Missing/Incorrect Data
-Something missing from the scraped data? Is an instructor listed incorrectly? Is a section not listed as honors or special topics when it should be? Please open a [missing/incorrect data issue](https://github.com/SaltyQuetzals/Good-Bull-API/issues/new?template=missing-incorrect-data.md)! This kind of scraping is difficult and I'm bound to make mistakes.
-
-## Bugs
-Is there a bug in the API? Please open a [bug issue](https://github.com/SaltyQuetzals/Good-Bull-API/issues/new?template=bug_report.md), and be descriptive as to what sequence of events you performed that caused the bug. If I can't reproduce your bug, I can't fix it!
