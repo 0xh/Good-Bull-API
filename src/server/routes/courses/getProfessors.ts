@@ -10,15 +10,16 @@ type InstructorAggregation = {
     grades: number
 }
 
-type instructorSummary = {
-    instructor: string,
-    ABCDFISUQX: number[],
-    GPA: number
+interface InstructorSummary{
+    [key: string]: {
+        ABCDFISUQX: number[],
+        GPA: number
+    }
 }
 
 export async function getProfessors(req: Request, res: Response){
     const {dept, courseNum}: {dept: string, courseNum: string} = req.params;
-    let instructorSummary: instructorSummary = {}
+    let instructorSummary: InstructorSummary = {}
     let aggregationOperation: Object[] = [
         {$match:
             {$and: [
