@@ -121,6 +121,7 @@ async function parsePDF(termCode: TermCode, text: string): Promise<{
             GPA = Number(gpaMatch[0]);
 
             ++i;
+            if (isNaN(Number(parsed[i+1]))) i++;
             for (let j = 0; j < 5; j++) {
               grades.push(Number(parsed[++i]));
             }
