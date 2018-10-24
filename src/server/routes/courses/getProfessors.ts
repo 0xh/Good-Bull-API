@@ -37,14 +37,24 @@ export async function getProfessors(req: Request, res: Response){
         }}
     ];
     const results: InstructorAggregation[] = await sectionModel.aggregate(aggregationOperation);
+    console.log(results);
     for (let result of results){
         const instructor: string = result["_id"].instructor;
-        if (instructor in instructorSummary){
-            
+        if (!(instructor in instructorSummary)){
+            instructorSummary[instructor] = {
+                ABCDFISUQX: [0,0,0,0,0,0,0,0,0,0],
+                GPA: 0
+            }
         }
-        else{
-            instructorSummary[instructor] = 
-        }
+        instructorSummary[instructor].ABCDFISUQX[result._id.index] = result.grades;
     }
-    console.log(results);
+    for (let key of Object.keys(instructorSummary)){
+        instructorSummary[key].GPA = getGPA(instructorSummary[key].ABCDFISUQX);
+    }
+    res.json(instructorSummary);
+}
+
+function getGPA(grades: number[]){
+    const sum: number = grades.slice(0, 5).reduce((a: number, b: number) => a + b, 0);
+    return (grades[0] * 4.0 + grades[1] * 3.0 + grades[2] * 2.0 + grades[3] * 1.0)/(sum);
 }
