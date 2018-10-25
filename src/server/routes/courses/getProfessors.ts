@@ -76,13 +76,8 @@ async function getSummaryInfo(dept: string, courseNum: string) {
       for (const historyKey of Object.keys(
                instructorSummary[summaryKey].history)) {
         const termCode = Number(historyKey);
-<<<<<<< HEAD
         instructorSummary[summaryKey].history[termCode].GPA = calculateGPA(
             instructorSummary[summaryKey].history[termCode].ABCDFISUQX);
-=======
-        instructorSummary[summaryKey].history[termCode].GPA = calculateGPA(
-            instructorSummary[summaryKey].history[termCode].ABCDFISUQX);
->>>>>>> b68674b6dc17c9ea54cab027b431bd80cb086b45
       }
     }
     return instructorSummary;
