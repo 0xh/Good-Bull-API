@@ -8,7 +8,7 @@
     "start": "npm run compile && node build/src/server/app.js",
     "check": "gts check",
     "clean": "gts clean",
-    "compile": "tsc -p .",
+    "compile": "npm run fix && tsc -p .",
     "fix": "gts fix",
     "prepare": "npm run compile",
     "pretest": "npm run compile",
