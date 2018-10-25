@@ -11,14 +11,6 @@ type SummaryAggregation = {
     grades: number
 }
 
-type HistoryAggregation = {
-    _id: {
-        instructor: string,
-        termCode: number
-    },
-    grades: number
-}
-
 interface InstructorSummary{
     [key: string]: {
         ABCDFISUQX: number[],
@@ -33,9 +25,15 @@ interface InstructorSummary{
 }
 
 export async function getProfessors(req: Request, res: Response){
-    const {dept, courseNum}: {dept: string, courseNum: string} = req.params;
-    const result = await getSummaryInfo(dept, courseNum);
-    res.json(result);
+    try{
+        const {dept, courseNum}: {dept: string, courseNum: string} = req.params;
+        const result = await getSummaryInfo(dept, courseNum);
+        res.json(result);
+    }
+    catch(err){
+        console.error(req.url, err);
+        res.sendStatus(400);
+    }
 }
 
 async function getSummaryInfo(dept: string, courseNum: string){
