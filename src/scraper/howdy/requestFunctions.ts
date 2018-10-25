@@ -6,7 +6,7 @@ const TERM_CODE_URL =
 const DEPT_LIST_URL =
     'https://compass-ssb.tamu.edu/pls/PROD/bwckgens.p_proc_term_date';
 
-const TIMEOUT_VALUE = 30 * 1000;  // In millis
+const TIMEOUT_VALUE = 60 * 1000;  // In millis
 
 export async function requestTermCodes(
     shallow = false, retryDepth = 0): Promise<TermCode[]> {
