@@ -18,7 +18,8 @@ function*
 async function scrape(): Promise<void> {
   try {
     const abbrevs = await getCollegeAbbrevs();
-    for (const termCode of termCodeMaker(2011, 3, new Date().getFullYear(), 3)) {
+    const currYear = new Date().getFullYear();
+    for (const termCode of termCodeMaker(2011, 3, currYear, 3)) {
       for (const abbrev of abbrevs) {
         await downloadPDF(termCode, abbrev);
       }
