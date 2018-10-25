@@ -8,9 +8,7 @@ Currently, the following data is scraped and served:
 - [X] Courses from [catalog.tamu.edu](http://catalog.tamu.edu/undergraduate/course-descriptions/)
 - [X] Sections from [Compass](https://compass-ssb.tamu.edu/pls/PROD/bwckschd.p_disp_dyn_sched)
 - [X] Building data from [fcor.tamu.edu](http://fcor.tamu.edu/webreporter/indexv6.asp?t=[Current_Inv_Bldgs]).
-
-Future data to scrape includes:
-- [ ] Grade data from [the registrar](http://web-as.tamu.edu/gradereport/).
+- [X] Grade data from [the registrar](http://web-as.tamu.edu/gradereport/).
 
 # Background
 This section has very little pertinence to the tech stack or project implementation, but describes my motivations for this project.
